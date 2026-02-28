@@ -1,0 +1,65 @@
+---
+title: Custom Skills
+description: Write and register your own skills.
+---
+
+Creating a custom skill requires three steps: write the factory, register it, and
+optionally add types.
+
+## 1. Write the factory
+
+```ts
+// src/skills/built-in/my-skill.ts
+import { tool } from "ai";
+import { z } from "zod/v4";
+import type { SkillFactory } from "../types";
+
+export const mySkill: SkillFactory = (ctx) => ({
+  my_tool: tool({
+    description: "Does something useful",
+    parameters: z.object({
+      input: z.string().describe("The input string"),
+    }),
+    execute: async ({ input }) => {
+      // ctx.db — SQLite database
+      // ctx.config — app config
+      return { result: `processed: ${input}` };
+    },
+  }),
+});
+```
+
+## 2. Register the skill
+
+In `src/index.ts`, add your skill to the registry:
+
+```ts
+import { mySkill } from "./skills/built-in/my-skill";
+
+registry.register("my-skill", mySkill);
+```
+
+## 3. Use Zod v4
+
+bun-cloud-agent uses Zod v4 (`zod/v4`). Import from `zod/v4` not `zod` to ensure
+compatibility with AI SDK schema serialization.
+
+## Accessing state
+
+The `SkillContext` gives you access to:
+
+| Property | Type | Description |
+|---|---|---|
+| `ctx.db` | `Database` | bun:sqlite database handle |
+| `ctx.config` | `Config` | Loaded app configuration |
+
+Use the state modules in `src/state/` to interact with the database:
+
+```ts
+import { saveMemory } from "../../state/memory";
+
+execute: async ({ key, value }) => {
+  await saveMemory(ctx.db, key, value);
+  return { saved: true };
+}
+```

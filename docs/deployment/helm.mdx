@@ -1,0 +1,87 @@
+---
+title: Helm Chart
+description: Deploy bun-cloud-agent on Kubernetes with Helm.
+---
+
+The `helm/` directory contains a production-ready Helm chart.
+
+## Install
+
+```bash
+helm install bun-cloud-agent ./helm \
+  --set secrets.openaiApiKey=sk-... \
+  --set config.modelDefault=openai:gpt-4o-mini
+```
+
+## Upgrade
+
+```bash
+helm upgrade bun-cloud-agent ./helm \
+  --reuse-values \
+  --set config.modelStrong=anthropic:claude-sonnet-4-20250514
+```
+
+## Key values
+
+### Models
+
+```yaml
+config:
+  modelFast: "ollama:llama3.2:3b"
+  modelDefault: "ollama:llama3.1:8b"
+  modelStrong: "openai:gpt-4o"
+  ollamaBaseUrl: "http://ollama:11434/v1"
+```
+
+### Secrets
+
+```yaml
+secrets:
+  openaiApiKey: ""
+  anthropicApiKey: ""
+  slackBotToken: ""
+  slackAppToken: ""
+  discordToken: ""
+  telegramToken: ""
+  # Use an existing Secret instead of chart-managed one:
+  existingSecret: ""
+```
+
+### Persistence
+
+```yaml
+persistence:
+  enabled: true
+  size: 1Gi
+  storageClass: ""   # uses cluster default
+  accessMode: ReadWriteOnce
+```
+
+### Ingress
+
+```yaml
+ingress:
+  enabled: false
+  className: "nginx"
+  host: "agent.example.com"
+  tls: []
+```
+
+## Using an existing Secret
+
+```bash
+kubectl create secret generic my-agent-secrets \
+  --from-literal=OPENAI_API_KEY=sk-...
+
+helm install bun-cloud-agent ./helm \
+  --set secrets.existingSecret=my-agent-secrets
+```
+
+## Published chart
+
+The Helm chart is published to GitHub Pages on every change to `helm/`:
+
+```bash
+helm repo add bun-cloud-agent https://augustinbegue.github.io/bun-cloud-agent
+helm install bun-cloud-agent bun-cloud-agent/bun-cloud-agent
+```

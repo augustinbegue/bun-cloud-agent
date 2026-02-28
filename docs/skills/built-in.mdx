@@ -1,0 +1,110 @@
+---
+title: Built-in Skills
+description: Reference for all skills that ship with bun-cloud-agent.
+---
+
+## time
+
+**File:** `src/skills/built-in/time.ts`
+
+Returns the current date and time in the agent's configured timezone.
+
+| Tool | Description |
+|---|---|
+| `get_current_time` | Returns ISO timestamp and human-readable time |
+
+---
+
+## memory
+
+**File:** `src/skills/built-in/memory.ts`
+
+Stores and retrieves long-term key-value memory in SQLite.
+
+| Tool | Description |
+|---|---|
+| `memory_save` | Save a value under a key |
+| `memory_recall` | Look up a value by key |
+| `memory_delete` | Delete a key |
+| `memory_list` | List all stored keys |
+
+---
+
+## web-search
+
+**File:** `src/skills/built-in/web-search.ts`
+
+Search the web and return results.
+
+| Tool | Description |
+|---|---|
+| `web_search` | Perform a web search and return top results |
+
+---
+
+## shell
+
+**File:** `src/skills/built-in/shell.ts`
+
+Execute shell commands via `Bun.$`.
+
+<Warning>Enable only in trusted environments.</Warning>
+
+| Tool | Description |
+|---|---|
+| `shell_exec` | Run a shell command and return stdout/stderr |
+
+---
+
+## tasks
+
+**File:** `src/skills/built-in/tasks.ts`
+
+Create and manage scheduled or recurring tasks stored in SQLite.
+
+| Tool | Description |
+|---|---|
+| `task_create` | Schedule a new task |
+| `task_list` | List pending tasks |
+| `task_complete` | Mark a task as done |
+| `task_delete` | Delete a task |
+
+---
+
+## feeds
+
+**File:** `src/skills/built-in/feeds.ts`
+
+Subscribe to RSS/Atom feeds and retrieve new entries.
+
+| Tool | Description |
+|---|---|
+| `feed_subscribe` | Subscribe to a feed URL |
+| `feed_list` | List subscribed feeds |
+| `feed_unsubscribe` | Unsubscribe from a feed |
+| `feed_fetch` | Fetch new entries from a feed |
+
+---
+
+## email
+
+**File:** `src/skills/built-in/email.ts`
+
+Send email via SMTP.
+
+| Tool | Description |
+|---|---|
+| `email_send` | Send an email |
+
+---
+
+## secrets
+
+**File:** `src/skills/built-in/secrets.ts`
+
+Read secrets from Vault/OpenBao.
+
+| Tool | Description |
+|---|---|
+| `secret_read` | Read a secret by path |
+| `secret_list` | List secrets at a path |

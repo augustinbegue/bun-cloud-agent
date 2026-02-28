@@ -1,0 +1,56 @@
+---
+title: Skills Overview
+description: How skills work and how to extend the agent with new tools.
+---
+
+Skills are the primary extension mechanism for bun-cloud-agent. Each skill is a factory
+function that receives a `SkillContext` and returns a set of AI SDK `tool()` objects.
+
+## Skill interface
+
+```ts
+// src/skills/types.ts
+type SkillContext = {
+  db: Database;
+  config: Config;
+};
+
+type SkillFactory = (ctx: SkillContext) => ToolSet;
+```
+
+## SkillRegistry
+
+`src/skills/index.ts` provides a `SkillRegistry` that collects all registered skills
+and merges them into a single `ToolSet` for the agent.
+
+```ts
+const registry = new SkillRegistry();
+registry.register("time", timeSkill);
+registry.register("memory", memorySkill);
+// ...
+
+const tools = registry.resolve(ctx); // → merged ToolSet
+```
+
+## Sources of tools
+
+The agent receives tools from two sources:
+
+| Source | How | Details |
+|---|---|---|
+| Built-in skills | Registered in `src/index.ts` | Always available |
+| MCP servers | Loaded by `src/skills/mcp/loader.ts` | Configured via `MCP_SERVERS` |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Built-in skills" icon="wrench" href="/skills/built-in">
+    Explore the skills that ship with the agent.
+  </Card>
+  <Card title="MCP servers" icon="server" href="/skills/mcp">
+    Connect external tool servers via MCP.
+  </Card>
+  <Card title="Custom skills" icon="code" href="/skills/custom">
+    Write and register your own skills.
+  </Card>
+</CardGroup>

@@ -1,0 +1,44 @@
+---
+title: Agent
+description: How the ToolLoopAgent works under the hood.
+---
+
+The agent lives in `src/agent/agent.ts` and wraps the AI SDK v6 `generateText` function
+in a controlled tool-use loop.
+
+## Tool loop
+
+```
+generate(messages)
+  └─ generateText({ model, tools, messages })
+       ├─ LLM responds with tool_calls
+       │    └─ tools are executed
+       │    └─ results appended to messages
+       └─ loop until stopCondition or maxSteps
+```
+
+## Model escalation
+
+The agent tracks how many steps have elapsed. After **10 steps** it automatically
+switches from the `default` model tier to the `strong` tier via the `prepareStep`
+callback of AI SDK v6.
+
+```ts
+prepareStep({ stepNumber }) {
+  if (stepNumber >= 10) return { model: modelRouter.get("strong") };
+}
+```
+
+This keeps costs low while allowing complex multi-step tasks to complete reliably.
+
+## Stop conditions
+
+The loop stops when:
+- The LLM returns a final text response with no tool calls.
+- `maxSteps` is reached (configurable, default 30).
+
+## Context window
+
+Conversation history is loaded from SQLite via `src/state/conversations.ts` and passed
+as the initial `messages` array. The assistant's final response is persisted back to
+SQLite after the loop completes.

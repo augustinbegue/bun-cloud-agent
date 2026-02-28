@@ -1,0 +1,72 @@
+---
+title: Configuration
+description: Full reference for all environment variables.
+---
+
+All configuration is done via environment variables. Bun auto-loads `.env` — no extra setup needed.
+
+## Server
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `3000` | HTTP server port |
+
+## Models
+
+Models use `provider:model` format, e.g. `openai:gpt-4o` or `ollama:llama3.1:8b`.
+
+| Variable | Default | Description |
+|---|---|---|
+| `MODEL_FAST` | `ollama:llama3.2:3b` | Fast tier — quick, low-latency tasks |
+| `MODEL_DEFAULT` | `ollama:llama3.1:8b` | Default tier — standard conversations |
+| `MODEL_STRONG` | `openai:gpt-4o` | Strong tier — complex tasks, auto-escalated after 10 agent steps |
+
+## Model providers
+
+Each provider reads from its standard environment variable.
+
+| Provider | Env var |
+|---|---|
+| OpenAI | `OPENAI_API_KEY` |
+| Anthropic | `ANTHROPIC_API_KEY` |
+| Google | `GOOGLE_GENERATIVE_AI_API_KEY` |
+| Ollama | `OLLAMA_BASE_URL` (default: `http://localhost:11434/v1`) |
+| Mistral | `MISTRAL_API_KEY` |
+| Groq | `GROQ_API_KEY` |
+| DeepSeek | `DEEPSEEK_API_KEY` |
+| xAI | `XAI_API_KEY` |
+
+See [model-router.ts](/architecture/model-routing) for the full list of supported providers.
+
+## Chat adapters
+
+Adapters are only instantiated when their credentials are present.
+
+| Variable | Description |
+|---|---|
+| `SLACK_BOT_TOKEN` | Slack bot OAuth token |
+| `SLACK_APP_TOKEN` | Slack app-level token (Socket Mode) |
+| `DISCORD_TOKEN` | Discord bot token |
+| `TELEGRAM_TOKEN` | Telegram bot token |
+
+## MCP servers
+
+| Variable | Description |
+|---|---|
+| `MCP_SERVERS` | JSON array of MCP server configs — see [MCP skills](/skills/mcp) |
+
+## Vault / OpenBao
+
+| Variable | Description |
+|---|---|
+| `VAULT_ADDR` | Vault/OpenBao address |
+| `VAULT_TOKEN` | Vault token |
+| `VAULT_NAMESPACE` | Vault namespace (optional) |
+
+## SQLite
+
+The database path defaults to `./data/agent.db`. Override via:
+
+| Variable | Default | Description |
+|---|---|---|
+| `DATABASE_PATH` | `./data/agent.db` | Path to the SQLite database file |

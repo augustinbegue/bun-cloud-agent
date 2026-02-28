@@ -1,0 +1,53 @@
+---
+title: Introduction
+description: Cloud-native personal AI assistant built with Bun, SQLite, and the AI SDK.
+---
+
+## What is bun-cloud-agent?
+
+**bun-cloud-agent** is a stateless, cloud-native AI assistant designed to run on Kubernetes.
+It combines a Bun HTTP server, a SQLite database (backed by a persistent volume), and an
+AI SDK v6 agent loop to deliver a multi-platform chat assistant with extensible skills
+and MCP (Model Context Protocol) tool support.
+
+## Key features
+
+<CardGroup cols={2}>
+  <Card title="Multi-platform chat" icon="comments">
+    Connect to Slack, Discord, and Telegram with a single deployment.
+  </Card>
+  <Card title="Extensible skills" icon="plug">
+    Register built-in or custom skills as AI SDK tools. Load external tools via MCP servers.
+  </Card>
+  <Card title="Model routing" icon="route">
+    Route tasks to fast, default, or strong model tiers. Auto-escalate on complex tasks.
+  </Card>
+  <Card title="Persistent state" icon="database">
+    All conversations, memories, and tasks are stored in SQLite on a PVC-backed volume.
+  </Card>
+</CardGroup>
+
+## How it works
+
+```
+Chat SDK (Slack/Discord/Telegram)
+        ↓
+  Bun.serve() HTTP server
+        ↓
+  ToolLoopAgent (AI SDK v6)
+        ↓
+  Skills (built-in) + MCP tools
+        ↕
+  SQLite (bun:sqlite, PVC-backed)
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Run the agent locally in under five minutes.
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration">
+    Configure models, providers, and chat adapters via environment variables.
+  </Card>
+</CardGroup>

@@ -1,0 +1,30 @@
+---
+title: API Overview
+description: REST and WebSocket API provided by bun-cloud-agent.
+---
+
+bun-cloud-agent exposes a simple HTTP API via `Bun.serve()`. All endpoints are defined
+in `src/api/routes.ts`.
+
+## Base URL
+
+By default the server runs on `http://localhost:3000`.
+
+## Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/health` | Liveness probe |
+| `GET` | `/ready` | Readiness probe |
+| `POST` | `/api/chat` | Send a message to the agent |
+| `GET` | `/api/skills` | List registered skills and tools |
+| `WS` | `/ws` | WebSocket streaming |
+
+## Authentication
+
+The API is unauthenticated by default. Use an ingress controller or a sidecar proxy
+(e.g. OAuth2 Proxy, Istio, or Traefik ForwardAuth) to add authentication in production.
+
+## Content type
+
+All REST endpoints accept and return `application/json`.

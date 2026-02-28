@@ -1,0 +1,42 @@
+---
+title: Contributing
+description: How to contribute to bun-cloud-agent.
+---
+
+Contributions are welcome! This page explains the conventions to follow.
+
+## Workflow
+
+1. Fork the repository and create a branch.
+2. Make your changes, ensuring tests pass: `bun test`.
+3. Ensure TypeScript compiles: `bun run typecheck`.
+4. Open a pull request against `main`.
+
+## Code conventions
+
+Follow the [Development Setup](/development/setup) page for all Bun-first conventions.
+
+## Adding a built-in skill
+
+1. Create `src/skills/built-in/my-skill.ts`.
+2. Export a `SkillFactory` function.
+3. Register it in `src/index.ts`.
+4. Add a test at `src/skills/built-in/my-skill.test.ts`.
+5. Document it in [docs/skills/built-in.mdx](/skills/built-in).
+
+## Adding a state module
+
+1. Create `src/state/my-module.ts` with CRUD functions.
+2. Add the schema to `src/state/db.ts`.
+3. Add a test at `src/state/my-module.test.ts`.
+
+## Commit messages
+
+Use conventional commits: `feat:`, `fix:`, `docs:`, `chore:`, `test:`.
+
+## CI
+
+All PRs must pass:
+- `bun run typecheck`
+- `bun test`
+- Docker build

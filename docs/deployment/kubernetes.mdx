@@ -1,0 +1,62 @@
+---
+title: Kubernetes
+description: Deploy bun-cloud-agent on Kubernetes.
+---
+
+The recommended way to deploy on Kubernetes is the [Helm chart](/deployment/helm).
+This page covers the raw Kubernetes concepts if you prefer to manage manifests directly.
+
+## Key decisions
+
+### Recreate strategy
+
+The deployment must use `strategy: Recreate` (not `RollingUpdate`) because SQLite
+does not support multiple writers. Two pods writing to the same PVC simultaneously
+will cause database corruption.
+
+### PVC
+
+A `ReadWriteOnce` PVC stores the SQLite database. The default size is `1Gi`.
+
+### Secret vs ConfigMap
+
+- Non-sensitive config (port, model names, Ollama URL) → `ConfigMap`
+- API keys and chat tokens → `Secret`
+
+## Minimal manifest
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bun-cloud-agent
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: bun-cloud-agent
+  template:
+    metadata:
+      labels:
+        app: bun-cloud-agent
+    spec:
+      containers:
+        - name: agent
+          image: ghcr.io/augustinbegue/bun-cloud-agent:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: bun-cloud-agent
+            - secretRef:
+                name: bun-cloud-agent
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: bun-cloud-agent-data
+```

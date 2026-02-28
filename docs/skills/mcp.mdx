@@ -1,0 +1,50 @@
+---
+title: MCP Skills
+description: Connect external tool servers via the Model Context Protocol.
+---
+
+bun-cloud-agent uses `@ai-sdk/mcp` to connect to external MCP servers at startup.
+Each server's tools are loaded and merged into the agent's `ToolSet` alongside built-in skills.
+
+## Configuration
+
+Set the `MCP_SERVERS` environment variable to a JSON array of server configs:
+
+```json
+[
+  {
+    "type": "http",
+    "url": "http://my-mcp-server:8080/mcp"
+  },
+  {
+    "type": "stdio",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-filesystem", "/data"]
+  }
+]
+```
+
+## Transport types
+
+| Type | Field | Description |
+|---|---|---|
+| `http` | `url` | Connect to an HTTP MCP server |
+| `stdio` | `command`, `args` | Spawn a local MCP server process |
+
+## Lifecycle
+
+MCP clients are created at startup (`src/skills/mcp/loader.ts`) and cleanly closed on
+`SIGINT`/`SIGTERM`. If a server is unreachable at startup the agent logs a warning and
+continues without that server's tools.
+
+## Example: filesystem server
+
+```env
+MCP_SERVERS=[{"type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","/workspace"]}]
+```
+
+## Example: Brave Search MCP
+
+```env
+MCP_SERVERS=[{"type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-brave-search"],"env":{"BRAVE_API_KEY":"your-key"}}]
+```

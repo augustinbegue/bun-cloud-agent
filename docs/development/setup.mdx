@@ -1,0 +1,52 @@
+---
+title: Development Setup
+description: Set up a local development environment.
+---
+
+## Prerequisites
+
+- [Bun](https://bun.sh) ≥ 1.1
+- A model provider (local Ollama or a cloud API key)
+
+## Install
+
+```bash
+git clone https://github.com/augustinbegue/bun-cloud-agent.git
+cd bun-cloud-agent
+bun install
+```
+
+## Environment
+
+```bash
+cp .env.example .env
+# Edit .env with your provider keys
+```
+
+## Run
+
+```bash
+bun run src/index.ts
+```
+
+## Type check
+
+```bash
+bun run typecheck
+```
+
+The project uses strict TypeScript settings including `noUncheckedIndexedAccess`.
+
+## Project conventions
+
+| Convention | Details |
+|---|---|
+| Runtime | Bun (not Node.js) |
+| HTTP server | `Bun.serve()` — no Express/Fastify |
+| SQLite | `bun:sqlite` — no better-sqlite3 |
+| File I/O | `Bun.file()` — no fs readFile/writeFile |
+| Shell | `Bun.$` — no execa |
+| Package manager | `bun install` / `bunx` |
+| Schema validation | Zod v4 (`zod/v4`) |
+| State | SQLite only — no Redis, no in-memory singletons |
+| Config | Env vars only (Bun auto-loads `.env`) |

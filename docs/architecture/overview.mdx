@@ -1,0 +1,48 @@
+---
+title: Architecture Overview
+description: High-level architecture of bun-cloud-agent.
+---
+
+## System diagram
+
+```
+Chat SDK (Slack / Discord / Telegram)
+              ↓
+       Bun.serve() :3000
+         /api/chat  /api/skills  /health  /ready
+              ↓
+       ToolLoopAgent  (AI SDK v6 generateText loop)
+         ↕ prepareStep: model escalation
+       SkillRegistry → tool() objects
+       MCPClient     → external tool servers
+              ↕
+       SQLite (bun:sqlite, WAL mode)
+         conversations  memory  tasks  feeds
+```
+
+## Components
+
+| Component | File | Responsibility |
+|---|---|---|
+| HTTP server | `src/index.ts` | Bootstrap, routing, graceful shutdown |
+| Agent | `src/agent/agent.ts` | ToolLoopAgent, step loop, model escalation |
+| Model router | `src/agent/model-router.ts` | Resolve `provider:model` strings to AI SDK providers |
+| Skill registry | `src/skills/index.ts` | Register and resolve skills into a `ToolSet` |
+| Built-in skills | `src/skills/built-in/` | memory, time, web-search, shell, tasks, feeds, email, secrets |
+| MCP loader | `src/skills/mcp/loader.ts` | Connect to MCP servers via HTTP or stdio |
+| SQLite DB | `src/state/db.ts` | Schema creation, WAL mode |
+| State modules | `src/state/` | Conversations, memory, tasks, feeds CRUD |
+| Chat bot | `src/chat/bot.ts` | Conditional adapter setup |
+| Chat handlers | `src/chat/handlers.ts` | `onNewMention` / `onSubscribedMessage` → agent |
+| State adapter | `src/chat/state-adapter.ts` | SQLite-backed Chat SDK `StateAdapter` |
+| API routes | `src/api/routes.ts` | REST endpoints |
+| WebSocket | `src/api/ws.ts` | Streaming WebSocket handler |
+| Scheduler | `src/scheduler/index.ts` | Periodic task runner |
+
+## Data flow
+
+1. A message arrives via a chat adapter or the `/api/chat` REST endpoint.
+2. `handlers.ts` retrieves the conversation context from SQLite and calls `agent.generate()`.
+3. The agent runs `generateText` in a loop, calling skill tools as needed.
+4. After 10 steps the model is automatically escalated to the `strong` tier.
+5. The final response is sent back to the originating platform.

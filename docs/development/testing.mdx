@@ -1,0 +1,72 @@
+---
+title: Testing
+description: How to run and write tests.
+---
+
+## Run tests
+
+```bash
+bun test
+```
+
+## Coverage
+
+```bash
+bun run test:coverage
+```
+
+## Test files
+
+Tests are co-located with source files as `*.test.ts`:
+
+| Test file | What it covers |
+|---|---|
+| `src/skills/index.test.ts` | `SkillRegistry` register, resolve, list |
+| `src/state/db.test.ts` | `initDatabase` schema creation, idempotency |
+| `src/state/conversations.test.ts` | Conversation CRUD + thread lookup |
+| `src/state/memory.test.ts` | Memory save, recall, delete, list |
+| `src/state/tasks.test.ts` | Tasks CRUD |
+| `src/state/feeds.test.ts` | Feeds CRUD |
+| `src/chat/state-adapter.test.ts` | `SQLiteStateAdapter` cache TTL, locks, subscriptions |
+| `src/skills/built-in/time.test.ts` | `timeSkill` tool execute functions |
+| `src/config/index.test.ts` | `loadConfig` env var defaults |
+
+## Writing tests
+
+Tests use `bun:test` exclusively:
+
+```ts
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { initDatabase } from "../state/db";
+
+describe("myModule", () => {
+  let db: ReturnType<typeof initDatabase>;
+
+  beforeEach(() => {
+    db = initDatabase(":memory:");
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it("does something", () => {
+    expect(true).toBe(true);
+  });
+});
+```
+
+## Conventions
+
+- Use `initDatabase(":memory:")` for SQLite-dependent tests — no cleanup needed.
+- Use `!` non-null assertions on indexed array access (required by `noUncheckedIndexedAccess`).
+- No mocking framework — use real implementations or trivial fakes (`{} as never`).
+- Timer-dependent tests use ≥ 50ms delays to avoid CI flakes.
+
+## Components not covered by unit tests
+
+These require live infrastructure and are integration-tested manually:
+
+- `createAgent` (needs a real model provider)
+- `loadMCPSkills` (needs MCP servers)
+- Chat bot handlers (need Slack/Discord/Telegram credentials)

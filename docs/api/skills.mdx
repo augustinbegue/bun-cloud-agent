@@ -1,0 +1,37 @@
+---
+title: GET /api/skills
+description: List all registered skills and their tools.
+---
+
+Returns a list of all skills currently registered in the agent, with their tool names
+and descriptions.
+
+## Request
+
+```http
+GET /api/skills
+```
+
+## Response
+
+```json
+{
+  "skills": [
+    {
+      "name": "time",
+      "tools": ["get_current_time"]
+    },
+    {
+      "name": "memory",
+      "tools": ["memory_save", "memory_recall", "memory_delete", "memory_list"]
+    }
+  ],
+  "total": 2
+}
+```
+
+## Example
+
+```bash
+curl http://localhost:3000/api/skills
+```

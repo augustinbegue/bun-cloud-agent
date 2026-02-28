@@ -1,0 +1,52 @@
+---
+title: POST /api/chat
+description: Send a message to the agent and receive a response.
+---
+
+Send a message to the agent. The agent runs its tool loop and returns the final response.
+
+## Request
+
+```http
+POST /api/chat
+Content-Type: application/json
+```
+
+```json
+{
+  "message": "What is the weather in Paris?",
+  "conversationId": "optional-thread-id"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `message` | `string` | Yes | The user message |
+| `conversationId` | `string` | No | Thread ID for conversation continuity. A new UUID is generated if omitted. |
+
+## Response
+
+```json
+{
+  "response": "I don't have access to real-time weather data...",
+  "conversationId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `response` | `string` | The agent's final text response |
+| `conversationId` | `string` | The thread ID (echoed or newly generated) |
+
+## Streaming
+
+Use the `/ws` WebSocket endpoint to receive streaming responses token by token.
+See [WebSocket](/api/overview) for details.
+
+## Example
+
+```bash
+curl -X POST http://localhost:3000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Remember that my timezone is Europe/Paris"}'
+```

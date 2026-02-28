@@ -1,0 +1,47 @@
+---
+title: Health & Readiness
+description: Kubernetes liveness and readiness probes.
+---
+
+## GET /health
+
+Liveness probe. Returns `200 OK` when the HTTP server is running.
+
+```http
+GET /health
+```
+
+```json
+{ "status": "ok" }
+```
+
+## GET /ready
+
+Readiness probe. Returns `200 OK` when the database is initialised and the agent is
+ready to handle requests. Returns `503 Service Unavailable` during startup.
+
+```http
+GET /ready
+```
+
+```json
+{ "status": "ready" }
+```
+
+## Kubernetes probe configuration
+
+The Helm chart configures these probes by default:
+
+```yaml
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 5
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 3000
+  initialDelaySeconds: 5
+```

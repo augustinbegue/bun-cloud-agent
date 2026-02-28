@@ -1,0 +1,78 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "maple",
+  "name": "bun-cloud-agent",
+  "colors": {
+    "primary": "#f472b6",
+    "light": "#fb7185",
+    "dark": "#e11d48"
+  },
+  "navbar": {
+    "links": [
+      {
+        "type": "github",
+        "href": "https://github.com/augustinbegue/bun-cloud-agent"
+      }
+    ]
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "Getting Started",
+        "pages": [
+          "introduction",
+          "quickstart",
+          "configuration"
+        ]
+      },
+      {
+        "group": "Architecture",
+        "pages": [
+          "architecture/overview",
+          "architecture/agent",
+          "architecture/model-routing",
+          "architecture/state"
+        ]
+      },
+      {
+        "group": "Skills",
+        "pages": [
+          "skills/overview",
+          "skills/built-in",
+          "skills/mcp",
+          "skills/custom"
+        ]
+      },
+      {
+        "group": "API Reference",
+        "pages": [
+          "api/overview",
+          "api/chat",
+          "api/skills",
+          "api/health"
+        ]
+      },
+      {
+        "group": "Deployment",
+        "pages": [
+          "deployment/docker",
+          "deployment/kubernetes",
+          "deployment/helm"
+        ]
+      },
+      {
+        "group": "Development",
+        "pages": [
+          "development/setup",
+          "development/testing",
+          "development/contributing"
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/augustinbegue/bun-cloud-agent"
+    }
+  }
+}

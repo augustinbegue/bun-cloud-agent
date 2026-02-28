@@ -1,0 +1,41 @@
+---
+title: State & Persistence
+description: How bun-cloud-agent stores data in SQLite.
+---
+
+All state is stored in a single SQLite database managed by `bun:sqlite`. The database
+file path defaults to `./data/agent.db` and is configurable via `DATABASE_PATH`.
+
+## Schema
+
+The schema is created (idempotently) by `src/state/db.ts` at startup.
+
+| Table | Module | Purpose |
+|---|---|---|
+| `conversations` | `state/conversations.ts` | Message history per thread |
+| `memory` | `state/memory.ts` | Long-term key-value memory |
+| `tasks` | `state/tasks.ts` | Scheduled and recurring tasks |
+| `feeds` | `state/feeds.ts` | RSS/Atom feed subscriptions + entries |
+
+## WAL mode
+
+The database is opened in WAL (Write-Ahead Logging) mode for better concurrent read
+performance. This is especially important for the Chat SDK `StateAdapter` which may
+read and write simultaneously from multiple chat platforms.
+
+## StateAdapter
+
+`src/chat/state-adapter.ts` implements the Chat SDK `StateAdapter` interface on top of
+SQLite. It provides:
+
+- **Cache** — TTL-based key-value cache with SQLite backing
+- **Locks** — Distributed-style locks using SQLite exclusive transactions
+- **Subscriptions** — Pub/sub channel tracking for multi-platform routing
+
+## Kubernetes persistence
+
+In Kubernetes the database file lives on a PVC (Persistent Volume Claim) mounted at
+`/data`. The deployment uses `Recreate` strategy (not `RollingUpdate`) to avoid two
+pods opening the same SQLite file simultaneously.
+
+See [Helm chart](/deployment/helm) for PVC configuration.

@@ -1,0 +1,66 @@
+---
+title: Quickstart
+description: Run bun-cloud-agent locally in under five minutes.
+---
+
+## Prerequisites
+
+- [Bun](https://bun.sh) ≥ 1.1
+- An API key for at least one model provider (OpenAI, Anthropic, or a local Ollama instance)
+
+## 1. Clone and install
+
+```bash
+git clone https://github.com/augustinbegue/bun-cloud-agent.git
+cd bun-cloud-agent
+bun install
+```
+
+## 2. Configure environment
+
+Copy the example file and fill in your values:
+
+```bash
+cp .env.example .env
+```
+
+Minimum required variables:
+
+```env
+# Model provider — pick one
+OPENAI_API_KEY=sk-...
+# Or point to a local Ollama instance
+OLLAMA_BASE_URL=http://localhost:11434/v1
+```
+
+See [Configuration](/configuration) for the full reference.
+
+## 3. Start the server
+
+```bash
+bun run src/index.ts
+```
+
+The server listens on port `3000` by default.
+
+## 4. Send a message
+
+```bash
+curl -X POST http://localhost:3000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What time is it?"}'
+```
+
+## Run with Docker
+
+```bash
+docker compose up --build
+```
+
+This mounts a local `./data` directory as the SQLite volume so state persists across restarts.
+
+## Run tests
+
+```bash
+bun test
+```

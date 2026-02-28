@@ -182,6 +182,18 @@ Supported providers: `ollama`, `openai`, `anthropic`, `google`, `vertex`, `mistr
 
 Each provider reads credentials from standard env vars (e.g. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GROQ_API_KEY`). Ollama uses `OLLAMA_BASE_URL` (default `http://localhost:11434/v1`).
 
+## Documentation
+
+Full documentation lives in [`docs/`](docs/) and is built with [Mintlify](https://mintlify.com).
+
+Preview locally:
+
+```bash
+bun run docs:dev   # runs mintlify dev from docs/ on port 3001
+```
+
+The deployed docs automatically expose `/llms.txt` and `/llms-full.txt` for LLM crawlers.
+
 ## Design Principles
 
 - **Skills are tools** — every capability is an AI SDK `tool()`, built-in or MCP

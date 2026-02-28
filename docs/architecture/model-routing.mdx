@@ -1,0 +1,54 @@
+---
+title: Model Routing
+description: How provider:model strings are resolved to AI SDK providers.
+---
+
+`src/agent/model-router.ts` resolves model strings in `provider:model` format to the
+correct AI SDK provider instances at startup.
+
+## Format
+
+```
+provider:model-name
+```
+
+Examples:
+
+```
+ollama:llama3.1:8b
+openai:gpt-4o
+anthropic:claude-sonnet-4-20250514
+google:gemini-2.0-flash
+groq:llama-3.3-70b-versatile
+```
+
+## Supported providers
+
+| Provider key | Package | Credential env var |
+|---|---|---|
+| `ollama` | `@ai-sdk/openai` (compat) | `OLLAMA_BASE_URL` |
+| `openai` | `@ai-sdk/openai` | `OPENAI_API_KEY` |
+| `anthropic` | `@ai-sdk/anthropic` | `ANTHROPIC_API_KEY` |
+| `google` | `@ai-sdk/google` | `GOOGLE_GENERATIVE_AI_API_KEY` |
+| `mistral` | `@ai-sdk/mistral` | `MISTRAL_API_KEY` |
+| `groq` | `@ai-sdk/groq` | `GROQ_API_KEY` |
+| `deepseek` | `@ai-sdk/deepseek` | `DEEPSEEK_API_KEY` |
+| `xai` | `@ai-sdk/xai` | `XAI_API_KEY` |
+| `cohere` | `@ai-sdk/cohere` | `COHERE_API_KEY` |
+| `azure` | `@ai-sdk/azure` | `AZURE_OPENAI_API_KEY` |
+| `bedrock` | `@ai-sdk/amazon-bedrock` | AWS env vars |
+| `vertex` | `@ai-sdk/google-vertex` | GCP env vars |
+| `fireworks` | `@ai-sdk/fireworks` | `FIREWORKS_API_KEY` |
+| `togetherai` | `@ai-sdk/togetherai` | `TOGETHER_AI_API_KEY` |
+| `perplexity` | `@ai-sdk/perplexity` | `PERPLEXITY_API_KEY` |
+| `cerebras` | `@ai-sdk/cerebras` | `CEREBRAS_API_KEY` |
+
+## Model tiers
+
+Three tiers are configured via environment variables and resolved at startup:
+
+| Tier | Env var | Default |
+|---|---|---|
+| `fast` | `MODEL_FAST` | `ollama:llama3.2:3b` |
+| `default` | `MODEL_DEFAULT` | `ollama:llama3.1:8b` |
+| `strong` | `MODEL_STRONG` | `openai:gpt-4o` |

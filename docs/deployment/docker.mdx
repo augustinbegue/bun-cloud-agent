@@ -1,0 +1,59 @@
+---
+title: Docker
+description: Run bun-cloud-agent with Docker and Docker Compose.
+---
+
+## Docker Compose (recommended for local use)
+
+```bash
+docker compose up --build
+```
+
+This starts the agent with a local `./data` volume for SQLite persistence.
+
+## docker-compose.yaml
+
+```yaml
+services:
+  agent:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file: .env
+    volumes:
+      - ./data:/data
+```
+
+## Dockerfile
+
+The image is based on `oven/bun:latest` and runs as a non-root user.
+
+```dockerfile
+FROM oven/bun:latest
+WORKDIR /app
+COPY package.json bun.lockb ./
+RUN bun install --frozen-lockfile
+COPY . .
+EXPOSE 3000
+CMD ["bun", "run", "src/index.ts"]
+```
+
+## Environment variables
+
+Pass configuration via an `.env` file or Docker environment variables:
+
+```bash
+docker run -p 3000:3000 \
+  -e OPENAI_API_KEY=sk-... \
+  -v $(pwd)/data:/data \
+  ghcr.io/augustinbegue/bun-cloud-agent:latest
+```
+
+## Pre-built image
+
+Images are published to GHCR on every push to `main`:
+
+```
+ghcr.io/augustinbegue/bun-cloud-agent:latest
+ghcr.io/augustinbegue/bun-cloud-agent:<git-sha>
+```

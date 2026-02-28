@@ -22,5 +22,10 @@
 
 3. To set credentials, pass them via --set or a values override:
   helm upgrade {{ .Release.Name }} ./helm \
-    --set secrets.cloudApiKey=sk-... \
+    --set secrets.openaiApiKey=sk-... \
     --set secrets.slackBotToken=xoxb-...
+
+4. To switch model providers:
+  helm upgrade {{ .Release.Name }} ./helm \
+    --set config.modelStrong=anthropic:claude-sonnet-4-20250514 \
+    --set secrets.anthropicApiKey=sk-ant-...

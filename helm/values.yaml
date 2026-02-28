@@ -75,18 +75,31 @@ config:
   port: 3000
   dbPath: /app/data/agent.db
   systemInstructions: ""  # uses built-in default if empty
+  schedulerEnabled: true
+  himalayaConfig: ""
 
-  # Local model (e.g. Ollama)
-  localModelUrl: "http://ollama:11434/v1"
-  localModelFast: "llama3.2:3b"
-  localModelDefault: "llama3.1:8b"
+  # Ollama base URL — used by the "ollama" provider
+  ollamaBaseUrl: "http://ollama:11434/v1"
 
-  # Cloud fallback
-  cloudModelUrl: "https://api.openai.com/v1"
-  cloudModelStrong: "gpt-4o"
+  # Model tiers — use provider:model format
+  # Supported providers: ollama, openai, anthropic, google, vertex, mistral,
+  #   cohere, bedrock, azure, xai, groq, deepseek, cerebras, fireworks,
+  #   togetherai, perplexity
+  modelFast: "ollama:llama3.2:3b"
+  modelDefault: "ollama:llama3.1:8b"
+  modelStrong: "openai:gpt-4o"
 
-  # MCP servers — JSON array string, e.g. '[{"type":"http","url":"http://mcp:8080"}]'
+  # MCP servers — JSON array string, e.g. '[{"name":"my-mcp","transport":{"type":"http","url":"http://mcp:8080"}}]'
   mcpServers: "[]"
+
+  # Vault / OpenBao configuration (optional)
+  vault:
+    addr: ""
+    authMethod: "token"  # token | approle | kubernetes
+    k8sRole: ""
+    k8sMount: "kubernetes"
+    namespace: ""
+    defaultMount: "secret"
 
 # Sensitive credentials — stored in a Secret
 # Set values here or provide an existing secret name
@@ -94,8 +107,28 @@ secrets:
   # Reference an existing Secret instead of creating one
   existingSecret: ""
 
-  # Values used when creating a new Secret (base64-encoded by Helm)
-  cloudApiKey: ""
+  # AI provider API keys — only set the ones you use
+  openaiApiKey: ""
+  anthropicApiKey: ""
+  googleGenerativeAiApiKey: ""
+  googleVertexApiKey: ""
+  mistralApiKey: ""
+  cohereApiKey: ""
+  xaiApiKey: ""
+  groqApiKey: ""
+  deepseekApiKey: ""
+  cerebrasApiKey: ""
+  fireworksApiKey: ""
+  togetherAiApiKey: ""
+  perplexityApiKey: ""
+  azureApiKey: ""
+
+  # AWS Bedrock — uses standard AWS credential chain
+  awsAccessKeyId: ""
+  awsSecretAccessKey: ""
+  awsRegion: ""
+
+  # Chat platform credentials
   slackBotToken: ""
   slackSigningSecret: ""
   discordApplicationId: ""
@@ -103,3 +136,8 @@ secrets:
   discordPublicKey: ""
   telegramBotToken: ""
   telegramSecretToken: ""
+
+  # Vault credentials
+  vaultToken: ""
+  vaultRoleId: ""
+  vaultSecretId: ""

@@ -126,6 +126,36 @@ GitHub Actions workflows in `.github/workflows/`:
 | Docker Build | `docker-publish.yml` | Push + PR to `main` — build & push to GHCR |
 | Helm Release | `helm-release.yml` | Changes to `helm/` — publish Helm chart |
 
+## Helm chart
+
+The `helm/` directory contains a standard Helm chart for Kubernetes deployment.
+
+```
+helm/
+  Chart.yaml           # Chart metadata (name, version, appVersion)
+  values.yaml          # Default values — config, secrets, persistence, probes
+  templates/
+    _helpers.tpl       # Template helpers (fullname, labels, secretName, pvcName)
+    configmap.yaml     # Non-sensitive config → env vars (PORT, MODEL_*, OLLAMA_BASE_URL, etc.)
+    secret.yaml        # Sensitive credentials → env vars (provider API keys, chat tokens, Vault)
+    deployment.yaml    # Single-replica Recreate strategy, envFrom ConfigMap + Secret, PVC mount
+    service.yaml       # ClusterIP on port 3000
+    ingress.yaml       # Optional ingress (disabled by default)
+    pvc.yaml           # SQLite data volume (1Gi RWO default)
+    NOTES.txt          # Post-install usage instructions
+```
+
+Key values:
+
+| Path | Purpose |
+|---|---|
+| `config.modelFast/Default/Strong` | Model tiers in `provider:model` format |
+| `config.ollamaBaseUrl` | Ollama endpoint (default `http://ollama:11434/v1`) |
+| `config.vault.*` | Vault/OpenBao non-secret settings |
+| `secrets.openaiApiKey`, `secrets.anthropicApiKey`, ... | Provider API keys (only non-empty ones are mounted) |
+| `secrets.existingSecret` | Use a pre-existing Secret instead of chart-managed one |
+| `persistence.enabled/size/storageClass` | SQLite PVC settings |
+
 ## Conventions
 
 - All state in SQLite — process is stateless and can restart without data loss

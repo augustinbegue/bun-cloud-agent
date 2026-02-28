@@ -7,12 +7,25 @@ metadata:
 data:
   PORT: {{ .Values.config.port | quote }}
   DB_PATH: {{ .Values.config.dbPath | quote }}
-  LOCAL_MODEL_URL: {{ .Values.config.localModelUrl | quote }}
-  LOCAL_MODEL_FAST: {{ .Values.config.localModelFast | quote }}
-  LOCAL_MODEL_DEFAULT: {{ .Values.config.localModelDefault | quote }}
-  CLOUD_MODEL_URL: {{ .Values.config.cloudModelUrl | quote }}
-  CLOUD_MODEL_STRONG: {{ .Values.config.cloudModelStrong | quote }}
+  OLLAMA_BASE_URL: {{ .Values.config.ollamaBaseUrl | quote }}
+  MODEL_FAST: {{ .Values.config.modelFast | quote }}
+  MODEL_DEFAULT: {{ .Values.config.modelDefault | quote }}
+  MODEL_STRONG: {{ .Values.config.modelStrong | quote }}
   MCP_SERVERS: {{ .Values.config.mcpServers | quote }}
+  SCHEDULER_ENABLED: {{ .Values.config.schedulerEnabled | quote }}
   {{- if .Values.config.systemInstructions }}
   SYSTEM_INSTRUCTIONS: {{ .Values.config.systemInstructions | quote }}
+  {{- end }}
+  {{- if .Values.config.himalayaConfig }}
+  HIMALAYA_CONFIG: {{ .Values.config.himalayaConfig | quote }}
+  {{- end }}
+  {{- with .Values.config.vault }}
+  {{- if .addr }}
+  VAULT_ADDR: {{ .addr | quote }}
+  VAULT_AUTH_METHOD: {{ .authMethod | quote }}
+  VAULT_K8S_ROLE: {{ .k8sRole | quote }}
+  VAULT_K8S_MOUNT: {{ .k8sMount | quote }}
+  VAULT_NAMESPACE: {{ .namespace | quote }}
+  VAULT_DEFAULT_MOUNT: {{ .defaultMount | quote }}
+  {{- end }}
   {{- end }}

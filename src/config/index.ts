@@ -45,6 +45,33 @@ export interface AgentConfig {
     botToken: string;
     secretToken: string;
   };
+
+  /** Vault / OpenBao secrets backend config */
+  vault: {
+    /** Base URL of the Vault or OpenBao server (e.g. https://vault.example.com) */
+    addr: string;
+    /**
+     * Authentication method:
+     * - "token"    — static token via VAULT_TOKEN
+     * - "approle"  — AppRole login via VAULT_ROLE_ID + VAULT_SECRET_ID
+     * - "kubernetes" — Kubernetes SA JWT login via VAULT_K8S_ROLE
+     */
+    authMethod: "token" | "approle" | "kubernetes";
+    /** Static Vault token (authMethod=token) */
+    token: string;
+    /** AppRole role_id (authMethod=approle) */
+    roleId: string;
+    /** AppRole secret_id (authMethod=approle) */
+    secretId: string;
+    /** Kubernetes auth role name (authMethod=kubernetes) */
+    k8sRole: string;
+    /** Kubernetes auth mount path (default: kubernetes) */
+    k8sMount: string;
+    /** Vault namespace header for HCP Vault (empty = not sent) */
+    namespace: string;
+    /** Default KV v2 mount point (default: secret) */
+    defaultMount: string;
+  };
 }
 
 export function loadConfig(): AgentConfig {
@@ -90,6 +117,21 @@ When you learn important information about the user, save it to memory for futur
     telegram: {
       botToken: process.env.TELEGRAM_BOT_TOKEN ?? "",
       secretToken: process.env.TELEGRAM_SECRET_TOKEN ?? "",
+    },
+
+    vault: {
+      addr: process.env.VAULT_ADDR ?? "",
+      authMethod: (process.env.VAULT_AUTH_METHOD ?? "token") as
+        | "token"
+        | "approle"
+        | "kubernetes",
+      token: process.env.VAULT_TOKEN ?? "",
+      roleId: process.env.VAULT_ROLE_ID ?? "",
+      secretId: process.env.VAULT_SECRET_ID ?? "",
+      k8sRole: process.env.VAULT_K8S_ROLE ?? "",
+      k8sMount: process.env.VAULT_K8S_MOUNT ?? "kubernetes",
+      namespace: process.env.VAULT_NAMESPACE ?? "",
+      defaultMount: process.env.VAULT_DEFAULT_MOUNT ?? "secret",
     },
   };
 }

@@ -6,6 +6,7 @@ import { timeSkill } from "./skills/built-in/time";
 import { webSearchSkill } from "./skills/built-in/web-search";
 import { shellSkill } from "./skills/built-in/shell";
 import { loadMCPSkills, closeMCPClients } from "./skills/mcp/loader";
+import { secretsSkill } from "./skills/built-in/secrets";
 import { createModelRouter } from "./agent/model-router";
 import { createAgent } from "./agent/agent";
 import { setupBot } from "./chat/bot";
@@ -47,6 +48,15 @@ registry.register({
   version: "1.0.0",
   skill: shellSkill,
 });
+
+if (config.vault.addr) {
+  registry.register({
+    name: "secrets",
+    description: "Read, write, and list secrets stored in Vault / OpenBao",
+    version: "1.0.0",
+    skill: secretsSkill,
+  });
+}
 
 // Load MCP tools from config
 const mcpTools = await loadMCPSkills(config.mcpServers);

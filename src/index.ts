@@ -7,11 +7,16 @@ import { webSearchSkill } from "./skills/built-in/web-search";
 import { shellSkill } from "./skills/built-in/shell";
 import { loadMCPSkills, closeMCPClients } from "./skills/mcp/loader";
 import { secretsSkill } from "./skills/built-in/secrets";
+import { emailSkill } from "./skills/built-in/email";
+import { feedSkill } from "./skills/built-in/feeds";
+import { createTaskSkill } from "./skills/built-in/tasks";
+import { createDeliverSkill } from "./skills/built-in/deliver";
 import { createModelRouter } from "./agent/model-router";
 import { createAgent } from "./agent/agent";
 import { setupBot } from "./chat/bot";
 import { createRoutes } from "./api/routes";
 import { createWebSocketHandler, type WSData } from "./api/ws";
+import { TaskScheduler } from "./scheduler";
 import type { SkillContext } from "./skills/types";
 
 // --- Bootstrap ---
@@ -58,6 +63,44 @@ if (config.vault.addr) {
   });
 }
 
+// Scheduler reference — resolved after agent creation
+let scheduler: TaskScheduler | null = null;
+const getScheduler = () => scheduler;
+
+// Delivery helper — wraps the chat bot's posting capability
+let chatBotPoster: { post: (platform: string, channel: string, text: string) => Promise<void> } | null = null;
+const getChatBot = () => chatBotPoster;
+
+registry.register({
+  name: "tasks",
+  description: "Create, manage, and schedule recurring agent tasks",
+  version: "1.0.0",
+  skill: createTaskSkill(getScheduler),
+});
+
+registry.register({
+  name: "deliver",
+  description: "Proactively send messages to chat platforms or email",
+  version: "1.0.0",
+  skill: createDeliverSkill(getChatBot),
+});
+
+if (config.himalayaConfig) {
+  registry.register({
+    name: "email",
+    description: "Read, search, send, and reply to emails via himalaya",
+    version: "1.0.0",
+    skill: emailSkill,
+  });
+}
+
+registry.register({
+  name: "feeds",
+  description: "Subscribe to RSS/Atom feeds and track new articles",
+  version: "1.0.0",
+  skill: feedSkill,
+});
+
 // Load MCP tools from config
 const mcpTools = await loadMCPSkills(config.mcpServers);
 
@@ -69,8 +112,26 @@ const agent = createAgent(registry, ctx, router, mcpTools);
 // --- Chat Bot ---
 const chat = setupBot(agent, config, db);
 
+// Wire up chat bot poster for the deliver skill
+chatBotPoster = {
+  post: async (platform: string, channel: string, text: string) => {
+    // Use the Chat SDK's sendMessage if available
+    if (typeof (chat as any).sendMessage === "function") {
+      await (chat as any).sendMessage(platform, channel, text);
+    } else {
+      throw new Error(`Direct posting to ${platform}/${channel} not yet supported by chat SDK`);
+    }
+  },
+};
+
+// --- Scheduler ---
+if (config.schedulerEnabled) {
+  scheduler = new TaskScheduler({ db, agent });
+  scheduler.start();
+}
+
 // --- HTTP + WS Server ---
-const routes = createRoutes(agent, registry, db);
+const routes = createRoutes(agent, registry, db, getScheduler);
 const wsHandler = createWebSocketHandler(agent, db);
 
 // Build webhook routes dynamically based on configured adapters
@@ -119,6 +180,7 @@ if (Object.keys(mcpTools).length > 0) {
 // --- Graceful shutdown ---
 process.on("SIGINT", async () => {
   console.log("\n[server] Shutting down...");
+  scheduler?.stop();
   await closeMCPClients();
   await chat.shutdown();
   db.close();
@@ -127,6 +189,7 @@ process.on("SIGINT", async () => {
 
 process.on("SIGTERM", async () => {
   console.log("[server] SIGTERM received, shutting down...");
+  scheduler?.stop();
   await closeMCPClients();
   await chat.shutdown();
   db.close();

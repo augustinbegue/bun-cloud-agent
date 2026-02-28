@@ -46,6 +46,12 @@ export interface AgentConfig {
     secretToken: string;
   };
 
+  /** Path to himalaya config file for email integration */
+  himalayaConfig: string;
+
+  /** Whether the task scheduler is enabled (default: true) */
+  schedulerEnabled: boolean;
+
   /** Vault / OpenBao secrets backend config */
   vault: {
     /** Base URL of the Vault or OpenBao server (e.g. https://vault.example.com) */
@@ -102,6 +108,9 @@ export function loadConfig(): AgentConfig {
       `You are a helpful personal AI assistant. You have access to various tools and skills.
 Use them proactively to help the user. Be concise and direct in your responses.
 When you learn important information about the user, save it to memory for future reference.`,
+
+    himalayaConfig: process.env.HIMALAYA_CONFIG ?? "",
+    schedulerEnabled: process.env.SCHEDULER_ENABLED !== "false",
 
     mcpServers,
 

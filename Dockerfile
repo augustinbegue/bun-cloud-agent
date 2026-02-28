@@ -20,6 +20,13 @@ COPY src/ src/
 FROM oven/bun:1-slim AS release
 WORKDIR /app
 
+# Install himalaya CLI for email integration
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+  && curl -sSL https://github.com/pimalaya/himalaya/releases/latest/download/himalaya-linux-x86_64.tar.gz \
+     | tar xz -C /usr/local/bin himalaya \
+  && chmod +x /usr/local/bin/himalaya \
+  && apt-get purge -y curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+
 COPY --from=install /tmp/app/node_modules node_modules
 COPY --from=build /tmp/app/src src
 COPY --from=build /tmp/app/package.json .

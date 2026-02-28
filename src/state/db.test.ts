@@ -30,6 +30,10 @@ describe("initDatabase", () => {
     expect(tables).toContain("chat_subscriptions");
     expect(tables).toContain("chat_cache");
     expect(tables).toContain("chat_locks");
+    expect(tables).toContain("scheduled_tasks");
+    expect(tables).toContain("task_runs");
+    expect(tables).toContain("feed_sources");
+    expect(tables).toContain("feed_entries");
   });
 
   it("enables WAL journal mode", () => {

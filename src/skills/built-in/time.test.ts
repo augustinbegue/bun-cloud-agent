@@ -1,14 +1,17 @@
 import { describe, it, expect } from "bun:test";
 import { timeSkill } from "./time";
 
-// Resolve the tools from the skill (no context needed)
+// Resolve the tools from the skill (no context needed for time skill)
 // @ts-expect-error - timeSkill requires no context fields
 const tools = timeSkill({});
-const getCurrentTime = tools.get_current_time.execute!;
-const dateDiff = tools.date_diff.execute!;
+const getCurrentTime = tools.get_current_time!.execute!;
+const dateDiff = tools.date_diff!.execute!;
 
-// Minimal options object required by ai sdk execute signature
-const opts = { messages: [], abortSignal: new AbortController().signal };
+const opts = {
+  toolCallId: "test-call",
+  messages: [] as never[],
+  abortSignal: new AbortController().signal,
+};
 
 describe("timeSkill — get_current_time", () => {
   it("returns iso, unix, formatted, and timezone fields", async () => {

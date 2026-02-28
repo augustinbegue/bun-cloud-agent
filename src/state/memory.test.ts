@@ -55,7 +55,7 @@ describe("Memory", () => {
     saveMemory(db, "project.deadline", "2025-12-01");
     const results = recallMemories(db, "preference");
     expect(results).toHaveLength(1);
-    expect(results[0].key).toBe("user.preference.theme");
+    expect(results[0]!.key).toBe("user.preference.theme");
   });
 
   it("recalls memories by content substring", () => {
@@ -63,7 +63,7 @@ describe("Memory", () => {
     saveMemory(db, "other", "buy groceries");
     const results = recallMemories(db, "Alice");
     expect(results).toHaveLength(1);
-    expect(results[0].content).toBe("remember to call Alice");
+    expect(results[0]!.content).toBe("remember to call Alice");
   });
 
   it("returns empty array when nothing matches recall query", () => {

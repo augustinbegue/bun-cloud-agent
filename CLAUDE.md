@@ -5,8 +5,9 @@ Cloud-native personal AI assistant. Stateless Bun process + SQLite (PVC-backed) 
 ## Commands
 
 - `bun run src/index.ts` — start the server (port 3000)
-- `bun test` — run tests
-- `bunx tsc --noEmit` — type-check
+- `bun run test` — run tests
+- `bun run test:coverage` — run tests with coverage report
+- `bun run typecheck` — type-check (`tsc --noEmit`)
 - `docker compose up --build` — run in Docker with persistent volume
 
 ## Testing
@@ -24,6 +25,16 @@ Unit tests live alongside source files (`*.test.ts`). They use `bun:sqlite` in-m
 | `src/config/index.test.ts` | `loadConfig` env var defaults |
 
 Components **not** covered by unit tests (require live infrastructure): `createAgent` (model), `loadMCPSkills` (MCP servers), chat bot handlers (Slack/Discord/Telegram).
+
+### Test conventions
+
+- All tests use `bun:test` exclusively (`describe`, `it`, `expect`) — no external test libraries.
+- Co-located with source as `*.test.ts`.
+- SQLite-dependent tests use `initDatabase(":memory:")` in `beforeEach` and `db.close()` in `afterEach`.
+- Use nested `describe` when a module has distinct sub-features (e.g. cache, locks); flat otherwise.
+- No mocking framework — tests use real implementations or trivial fakes (`{} as never`).
+- Use `!` non-null assertions on indexed array access (required by `noUncheckedIndexedAccess`).
+- Timer-dependent tests (TTL, lock expiry) use ≥50ms delays to avoid CI flakes.
 
 ## Bun-first
 
@@ -100,6 +111,16 @@ MCP servers are also loaded as tools via `@ai-sdk/mcp` `createMCPClient` — con
 | `fast` | llama3.2:3b (local) | Quick tasks |
 | `default` | llama3.1:8b (local) | Standard conversations |
 | `strong` | gpt-4o (cloud) | Complex tasks, auto-escalated after 10 agent steps |
+
+## CI
+
+GitHub Actions workflows in `.github/workflows/`:
+
+| Workflow | File | Trigger |
+|---|---|---|
+| CI | `ci.yml` | Push + PR to `main` — type-check + tests with coverage |
+| Docker Build | `docker-publish.yml` | Push + PR to `main` — build & push to GHCR |
+| Helm Release | `helm-release.yml` | Changes to `helm/` — publish Helm chart |
 
 ## Conventions
 

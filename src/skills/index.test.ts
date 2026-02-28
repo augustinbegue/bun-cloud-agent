@@ -24,7 +24,7 @@ describe("SkillRegistry", () => {
     };
     registry.register(def);
     expect(registry.list()).toHaveLength(1);
-    expect(registry.list()[0].name).toBe("test-skill");
+    expect(registry.list()[0]!.name).toBe("test-skill");
   });
 
   it("overwrites existing skill with same name", () => {
@@ -43,7 +43,7 @@ describe("SkillRegistry", () => {
     registry.register(def1);
     registry.register(def2);
     expect(registry.list()).toHaveLength(1);
-    expect(registry.list()[0].version).toBe("2.0.0");
+    expect(registry.list()[0]!.version).toBe("2.0.0");
   });
 
   it("resolve merges tools from all skills", () => {

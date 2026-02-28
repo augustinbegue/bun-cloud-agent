@@ -3,6 +3,11 @@
   "module": "src/index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "test": "bun test",
+    "test:coverage": "bun test --coverage",
+    "typecheck": "bunx tsc --noEmit"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },

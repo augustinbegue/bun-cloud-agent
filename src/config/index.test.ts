@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { describe, it, expect, afterEach } from "bun:test";
 import { loadConfig } from "./index";
 
 describe("loadConfig", () => {
@@ -51,7 +51,7 @@ describe("loadConfig", () => {
   });
 
   it("parses valid MCP_SERVERS JSON", () => {
-    const servers = [{ name: "my-mcp", transport: { type: "http", url: "http://localhost:9000" } }];
+    const servers = [{ name: "my-mcp", transport: { type: "http" as const, url: "http://localhost:9000" } }];
     process.env.MCP_SERVERS = JSON.stringify(servers);
     expect(loadConfig().mcpServers).toEqual(servers);
   });

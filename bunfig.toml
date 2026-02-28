@@ -1,0 +1,4 @@
+[test]
+# Coverage is opt-in via `bun test --coverage` (or `bun run test:coverage`).
+# Once a baseline is established, uncomment to enforce a minimum threshold:
+# coverageThreshold = { line = 80, function = 80 }

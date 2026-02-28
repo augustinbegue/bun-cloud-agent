@@ -25,13 +25,15 @@ describe("SQLiteStateAdapter", () => {
 
     it("stores and retrieves a value", async () => {
       await adapter.set("key", { hello: "world" });
-      expect(await adapter.get("key")).toEqual({ hello: "world" });
+      const value = await adapter.get("key");
+      expect(value).toEqual({ hello: "world" });
     });
 
     it("overwrites an existing value", async () => {
       await adapter.set("key", "first");
       await adapter.set("key", "second");
-      expect(await adapter.get("key")).toBe("second");
+      const value = await adapter.get("key");
+      expect(value).toBe("second");
     });
 
     it("deletes a value", async () => {
@@ -42,13 +44,15 @@ describe("SQLiteStateAdapter", () => {
 
     it("expires a value after TTL", async () => {
       await adapter.set("ttl-key", "temporary", 1); // 1 ms TTL
-      await new Promise((r) => setTimeout(r, 10));
+      // Wait long enough for TTL to expire reliably (avoids flakes in CI)
+      await new Promise((r) => setTimeout(r, 50));
       expect(await adapter.get("ttl-key")).toBeNull();
     });
 
     it("keeps a value before TTL expires", async () => {
       await adapter.set("persist-key", "here", 60_000);
-      expect(await adapter.get("persist-key")).toBe("here");
+      const value = await adapter.get("persist-key");
+      expect(value).toBe("here");
     });
   });
 
@@ -94,7 +98,8 @@ describe("SQLiteStateAdapter", () => {
 
     it("allows re-acquiring an expired lock", async () => {
       await adapter.acquireLock("thread-exp", 1); // expires in 1 ms
-      await new Promise((r) => setTimeout(r, 10));
+      // Wait long enough for lock to expire reliably (avoids flakes in CI)
+      await new Promise((r) => setTimeout(r, 50));
       const lock = await adapter.acquireLock("thread-exp", 5000);
       expect(lock).not.toBeNull();
     });

@@ -9,6 +9,22 @@ Cloud-native personal AI assistant. Stateless Bun process + SQLite (PVC-backed) 
 - `bunx tsc --noEmit` — type-check
 - `docker compose up --build` — run in Docker with persistent volume
 
+## Testing
+
+Unit tests live alongside source files (`*.test.ts`). They use `bun:sqlite` in-memory databases — no external services required.
+
+| Test file | What it covers |
+|---|---|
+| `src/skills/index.test.ts` | `SkillRegistry` register, resolve, list |
+| `src/state/db.test.ts` | `initDatabase` schema creation, idempotency |
+| `src/state/conversations.test.ts` | Conversation CRUD + thread lookup |
+| `src/state/memory.test.ts` | Memory save, recall, delete, list |
+| `src/chat/state-adapter.test.ts` | `SQLiteStateAdapter` cache TTL, locks, subscriptions |
+| `src/skills/built-in/time.test.ts` | `timeSkill` tool execute functions |
+| `src/config/index.test.ts` | `loadConfig` env var defaults |
+
+Components **not** covered by unit tests (require live infrastructure): `createAgent` (model), `loadMCPSkills` (MCP servers), chat bot handlers (Slack/Discord/Telegram).
+
 ## Bun-first
 
 Default to Bun instead of Node.js.

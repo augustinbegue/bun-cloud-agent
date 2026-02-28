@@ -140,6 +140,26 @@ External MCP servers are loaded as additional tools. Configure via `MCP_SERVERS`
 ]
 ```
 
+## Testing
+
+Unit tests live alongside source files (`*.test.ts`). They run entirely in-process using `bun:sqlite` in-memory databases — no external services required.
+
+```bash
+bun test
+```
+
+| Test file | What it covers |
+|---|---|
+| `src/skills/index.test.ts` | `SkillRegistry` register, resolve, list |
+| `src/state/db.test.ts` | `initDatabase` schema creation, idempotency |
+| `src/state/conversations.test.ts` | Conversation CRUD + thread lookup |
+| `src/state/memory.test.ts` | Memory save, recall, delete, list |
+| `src/chat/state-adapter.test.ts` | `SQLiteStateAdapter` cache TTL, locks, subscriptions |
+| `src/skills/built-in/time.test.ts` | `timeSkill` tool execute functions |
+| `src/config/index.test.ts` | `loadConfig` env var defaults |
+
+Components requiring live infrastructure (model endpoints, MCP servers, chat platforms) are not covered by unit tests.
+
 ## Docker
 
 ```bash

@@ -7,19 +7,16 @@ export interface AgentConfig {
   /** SQLite database path */
   dbPath: string;
 
-  /** Local model base URL (OpenAI-compatible) */
-  localModelUrl: string;
-  /** Local fast model name */
-  localModelFast: string;
-  /** Local default model name */
-  localModelDefault: string;
+  /** Ollama base URL (OpenAI-compatible local inference) */
+  ollamaBaseUrl: string;
 
-  /** Cloud model base URL */
-  cloudModelUrl: string;
-  /** Cloud API key */
-  cloudApiKey: string;
-  /** Cloud strong model name */
-  cloudModelStrong: string;
+  /**
+   * Model tiers use the `provider:model` format.
+   * Examples: `ollama:llama3.1:8b`, `openai:gpt-4o`, `anthropic:claude-sonnet-4-20250514`
+   */
+  modelFast: string;
+  modelDefault: string;
+  modelStrong: string;
 
   /** Agent system instructions */
   systemInstructions: string;
@@ -95,13 +92,10 @@ export function loadConfig(): AgentConfig {
     port: Number(process.env.PORT ?? 3000),
     dbPath: process.env.DB_PATH ?? "data/agent.db",
 
-    localModelUrl: process.env.LOCAL_MODEL_URL ?? "http://localhost:11434/v1",
-    localModelFast: process.env.LOCAL_MODEL_FAST ?? "llama3.2:3b",
-    localModelDefault: process.env.LOCAL_MODEL_DEFAULT ?? "llama3.1:8b",
-
-    cloudModelUrl: process.env.CLOUD_MODEL_URL ?? "https://api.openai.com/v1",
-    cloudApiKey: process.env.CLOUD_API_KEY ?? "",
-    cloudModelStrong: process.env.CLOUD_MODEL_STRONG ?? "gpt-4o",
+    ollamaBaseUrl: process.env.OLLAMA_BASE_URL ?? "http://localhost:11434/v1",
+    modelFast: process.env.MODEL_FAST ?? "ollama:llama3.2:3b",
+    modelDefault: process.env.MODEL_DEFAULT ?? "ollama:llama3.1:8b",
+    modelStrong: process.env.MODEL_STRONG ?? "openai:gpt-4o",
 
     systemInstructions:
       process.env.SYSTEM_INSTRUCTIONS ??

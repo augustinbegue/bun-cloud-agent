@@ -15,20 +15,18 @@ describe("loadConfig", () => {
   it("returns sensible defaults when no env vars are set", () => {
     // Clear relevant vars to test defaults
     const keys = [
-      "PORT", "DB_PATH", "LOCAL_MODEL_URL", "LOCAL_MODEL_FAST", "LOCAL_MODEL_DEFAULT",
-      "CLOUD_MODEL_URL", "CLOUD_API_KEY", "CLOUD_MODEL_STRONG", "SYSTEM_INSTRUCTIONS",
-      "MCP_SERVERS",
+      "PORT", "DB_PATH", "OLLAMA_BASE_URL", "MODEL_FAST", "MODEL_DEFAULT",
+      "MODEL_STRONG", "SYSTEM_INSTRUCTIONS", "MCP_SERVERS",
     ];
     for (const k of keys) delete process.env[k];
 
     const cfg = loadConfig();
     expect(cfg.port).toBe(3000);
     expect(cfg.dbPath).toBe("data/agent.db");
-    expect(cfg.localModelUrl).toBe("http://localhost:11434/v1");
-    expect(cfg.localModelFast).toBe("llama3.2:3b");
-    expect(cfg.localModelDefault).toBe("llama3.1:8b");
-    expect(cfg.cloudModelUrl).toBe("https://api.openai.com/v1");
-    expect(cfg.cloudModelStrong).toBe("gpt-4o");
+    expect(cfg.ollamaBaseUrl).toBe("http://localhost:11434/v1");
+    expect(cfg.modelFast).toBe("ollama:llama3.2:3b");
+    expect(cfg.modelDefault).toBe("ollama:llama3.1:8b");
+    expect(cfg.modelStrong).toBe("openai:gpt-4o");
     expect(cfg.mcpServers).toEqual([]);
   });
 
@@ -42,12 +40,12 @@ describe("loadConfig", () => {
     expect(loadConfig().dbPath).toBe("/data/custom.db");
   });
 
-  it("reads cloud config from env", () => {
-    process.env.CLOUD_API_KEY = "sk-test";
-    process.env.CLOUD_MODEL_STRONG = "gpt-4-turbo";
+  it("reads model tier config from env", () => {
+    process.env.MODEL_STRONG = "anthropic:claude-sonnet-4-20250514";
+    process.env.MODEL_FAST = "groq:llama-3.1-8b-instant";
     const cfg = loadConfig();
-    expect(cfg.cloudApiKey).toBe("sk-test");
-    expect(cfg.cloudModelStrong).toBe("gpt-4-turbo");
+    expect(cfg.modelStrong).toBe("anthropic:claude-sonnet-4-20250514");
+    expect(cfg.modelFast).toBe("groq:llama-3.1-8b-instant");
   });
 
   it("parses valid MCP_SERVERS JSON", () => {

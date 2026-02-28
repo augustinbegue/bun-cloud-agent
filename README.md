@@ -74,7 +74,7 @@ src/
   config/index.ts           # Config loading from env
   agent/
     agent.ts                # ToolLoopAgent setup with model escalation
-    model-router.ts         # Local-first → cloud fallback model routing
+    model-router.ts         # Multi-provider model registry (provider:model format)
   skills/
     types.ts                # Skill interface (SkillContext, SkillDefinition)
     index.ts                # SkillRegistry
@@ -170,13 +170,17 @@ SQLite data persists in a named volume (`agent-data`). Configure environment var
 
 ## Model Routing
 
-The agent uses a tiered model strategy:
+Models use the `provider:model` format. Configure each tier via env vars:
 
-| Tier | Default | Use |
+| Tier | Default | Env var |
 |---|---|---|
-| `fast` | `llama3.2:3b` (local) | Quick, simple tasks |
-| `default` | `llama3.1:8b` (local) | Standard conversations |
-| `strong` | `gpt-4o` (cloud) | Complex tasks, auto-escalated after 10 steps |
+| `fast` | `ollama:llama3.2:3b` | `MODEL_FAST` |
+| `default` | `ollama:llama3.1:8b` | `MODEL_DEFAULT` |
+| `strong` | `openai:gpt-4o` | `MODEL_STRONG` |
+
+Supported providers: `ollama`, `openai`, `anthropic`, `google`, `vertex`, `mistral`, `cohere`, `bedrock`, `azure`, `xai`, `groq`, `deepseek`, `cerebras`, `fireworks`, `togetherai`, `perplexity`.
+
+Each provider reads credentials from standard env vars (e.g. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GROQ_API_KEY`). Ollama uses `OLLAMA_BASE_URL` (default `http://localhost:11434/v1`).
 
 ## Design Principles
 

@@ -79,7 +79,7 @@ src/
   config/index.ts           # Env-based config
   agent/
     agent.ts                # ToolLoopAgent with model escalation (prepareStep)
-    model-router.ts         # Local-first → cloud fallback (fast/default/strong)
+    model-router.ts         # Multi-provider model registry (provider:model format)
   skills/
     types.ts                # Skill, SkillContext, SkillDefinition interfaces
     index.ts                # SkillRegistry (register + resolve → ToolSet)
@@ -106,11 +106,15 @@ MCP servers are also loaded as tools via `@ai-sdk/mcp` `createMCPClient` — con
 
 ## Model routing
 
-| Tier | Default model | When used |
-|---|---|---|
-| `fast` | llama3.2:3b (local) | Quick tasks |
-| `default` | llama3.1:8b (local) | Standard conversations |
-| `strong` | gpt-4o (cloud) | Complex tasks, auto-escalated after 10 agent steps |
+Models use `provider:model` format (e.g. `ollama:llama3.1:8b`, `openai:gpt-4o`, `anthropic:claude-sonnet-4-20250514`).
+
+| Tier | Default | Env var | When used |
+|---|---|---|---|
+| `fast` | `ollama:llama3.2:3b` | `MODEL_FAST` | Quick tasks |
+| `default` | `ollama:llama3.1:8b` | `MODEL_DEFAULT` | Standard conversations |
+| `strong` | `openai:gpt-4o` | `MODEL_STRONG` | Complex tasks, auto-escalated after 10 agent steps |
+
+Supported providers: `ollama`, `openai`, `anthropic`, `google`, `vertex`, `mistral`, `cohere`, `bedrock`, `azure`, `xai`, `groq`, `deepseek`, `cerebras`, `fireworks`, `togetherai`, `perplexity`. Each reads credentials from its standard env var (e.g. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`).
 
 ## CI
 

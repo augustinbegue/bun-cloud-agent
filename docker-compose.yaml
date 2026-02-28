@@ -1,0 +1,32 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    volumes:
+      - agent-data:/app/data
+    environment:
+      - DB_PATH=/app/data/agent.db
+      - PORT=3000
+      # Local model (Ollama)
+      - LOCAL_MODEL_URL=http://host.docker.internal:11434/v1
+      - LOCAL_MODEL_FAST=llama3.2:3b
+      - LOCAL_MODEL_DEFAULT=llama3.1:8b
+      # Cloud fallback
+      - CLOUD_MODEL_URL=https://api.openai.com/v1
+      - CLOUD_API_KEY=${CLOUD_API_KEY:-}
+      - CLOUD_MODEL_STRONG=gpt-4o
+      # Chat platform tokens (optional)
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
+      - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET:-}
+      - DISCORD_APPLICATION_ID=${DISCORD_APPLICATION_ID:-}
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:-}
+      - DISCORD_PUBLIC_KEY=${DISCORD_PUBLIC_KEY:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_SECRET_TOKEN=${TELEGRAM_SECRET_TOKEN:-}
+      # MCP servers (JSON array, optional)
+      - MCP_SERVERS=${MCP_SERVERS:-[]}
+
+volumes:
+  agent-data:

@@ -1,0 +1,95 @@
+import type { MCPSkillConfig } from "../skills/mcp/loader";
+
+export interface AgentConfig {
+  /** Server port */
+  port: number;
+
+  /** SQLite database path */
+  dbPath: string;
+
+  /** Local model base URL (OpenAI-compatible) */
+  localModelUrl: string;
+  /** Local fast model name */
+  localModelFast: string;
+  /** Local default model name */
+  localModelDefault: string;
+
+  /** Cloud model base URL */
+  cloudModelUrl: string;
+  /** Cloud API key */
+  cloudApiKey: string;
+  /** Cloud strong model name */
+  cloudModelStrong: string;
+
+  /** Agent system instructions */
+  systemInstructions: string;
+
+  /** MCP server configurations */
+  mcpServers: MCPSkillConfig[];
+
+  /** Slack adapter config */
+  slack: {
+    botToken: string;
+    signingSecret: string;
+  };
+
+  /** Discord adapter config */
+  discord: {
+    applicationId: string;
+    botToken: string;
+    publicKey: string;
+  };
+
+  /** Telegram adapter config */
+  telegram: {
+    botToken: string;
+    secretToken: string;
+  };
+}
+
+export function loadConfig(): AgentConfig {
+  const mcpServersRaw = process.env.MCP_SERVERS;
+  let mcpServers: MCPSkillConfig[] = [];
+  if (mcpServersRaw) {
+    try {
+      mcpServers = JSON.parse(mcpServersRaw);
+    } catch {
+      console.warn("Failed to parse MCP_SERVERS env var, ignoring");
+    }
+  }
+
+  return {
+    port: Number(process.env.PORT ?? 3000),
+    dbPath: process.env.DB_PATH ?? "data/agent.db",
+
+    localModelUrl: process.env.LOCAL_MODEL_URL ?? "http://localhost:11434/v1",
+    localModelFast: process.env.LOCAL_MODEL_FAST ?? "llama3.2:3b",
+    localModelDefault: process.env.LOCAL_MODEL_DEFAULT ?? "llama3.1:8b",
+
+    cloudModelUrl: process.env.CLOUD_MODEL_URL ?? "https://api.openai.com/v1",
+    cloudApiKey: process.env.CLOUD_API_KEY ?? "",
+    cloudModelStrong: process.env.CLOUD_MODEL_STRONG ?? "gpt-4o",
+
+    systemInstructions:
+      process.env.SYSTEM_INSTRUCTIONS ??
+      `You are a helpful personal AI assistant. You have access to various tools and skills.
+Use them proactively to help the user. Be concise and direct in your responses.
+When you learn important information about the user, save it to memory for future reference.`,
+
+    mcpServers,
+
+    slack: {
+      botToken: process.env.SLACK_BOT_TOKEN ?? "",
+      signingSecret: process.env.SLACK_SIGNING_SECRET ?? "",
+    },
+    discord: {
+      applicationId: process.env.DISCORD_APPLICATION_ID ?? "",
+      botToken: process.env.DISCORD_BOT_TOKEN ?? "",
+      publicKey: process.env.DISCORD_PUBLIC_KEY ?? "",
+    },
+    telegram: {
+      botToken: process.env.TELEGRAM_BOT_TOKEN ?? "",
+      secretToken: process.env.TELEGRAM_SECRET_TOKEN ?? "",
+    },
+  };
+}

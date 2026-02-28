@@ -1,0 +1,23 @@
+{
+  "name": "bun-cloud-agent",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.50",
+    "@ai-sdk/mcp": "^1.0.22",
+    "@ai-sdk/openai": "^3.0.37",
+    "@chat-adapter/discord": "^4.15.0",
+    "@chat-adapter/slack": "^4.15.0",
+    "@chat-adapter/telegram": "^4.15.0",
+    "ai": "^6.0.105",
+    "chat": "^4.15.0",
+    "zod": "^4.3.6"
+  }
+}

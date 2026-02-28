@@ -1,0 +1,402 @@
+---
+title: WebSocket API
+description: Stream agent responses in real-time over WebSocket.
+---
+
+The WebSocket API provides real-time streaming of agent responses. Instead of waiting for the entire response to complete, you receive tokens as they're generated.
+
+## Endpoint
+
+```
+ws://localhost:3000/ws
+```
+
+For production with TLS:
+```
+wss://your-domain.com/ws
+```
+
+## Protocol
+
+The WebSocket uses a JSON message-based protocol.
+
+### Connection flow
+
+1. **Client connects** to `/ws`
+2. **Server sends** connection confirmation:
+   ```json
+   {
+     "type": "connected",
+     "conversationId": "01234567-89ab-cdef-..."
+   }
+   ```
+3. **Client sends** messages
+4. **Server streams** response chunks
+5. **Server sends** completion message
+
+### Client → Server
+
+Send a message to the agent:
+
+```json
+{
+  "type": "message",
+  "content": "What time is it?",
+  "conversationId": "optional-uuid"
+}
+```
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `type` | `string` | Yes | Must be `"message"` |
+| `content` | `string` | Yes | The user message to send |
+| `conversationId` | `string` | No | Thread ID for conversation continuity. Uses the auto-generated ID if omitted. |
+
+### Server → Client
+
+The server sends multiple message types during the response:
+
+#### Text chunk
+
+Streamed response tokens as they're generated:
+
+```json
+{
+  "type": "text",
+  "content": "The current"
+}
+```
+
+```json
+{
+  "type": "text",
+  "content": " time is"
+}
+```
+
+```json
+{
+  "type": "text",
+  "content": " 3:42 PM UTC."
+}
+```
+
+Each chunk is a fragment of the final response. Concatenate all `text` chunks to build the complete answer.
+
+#### Completion
+
+Signals that the response is complete:
+
+```json
+{
+  "type": "done",
+  "conversationId": "01234567-89ab-cdef-..."
+}
+```
+
+After receiving `done`, you can send the next message.
+
+#### Error
+
+Indicates a processing error:
+
+```json
+{
+  "type": "error",
+  "error": "Model timeout: request took too long"
+}
+```
+
+## Example client (JavaScript)
+
+```javascript
+const ws = new WebSocket("ws://localhost:3000/ws");
+
+let conversationId = null;
+let currentResponse = "";
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+
+  switch (msg.type) {
+    case "connected":
+      conversationId = msg.conversationId;
+      console.log("Connected with conversation ID:", conversationId);
+      break;
+
+    case "text":
+      currentResponse += msg.content;
+      // Update UI with partial response
+      updateResponseUI(currentResponse);
+      break;
+
+    case "done":
+      console.log("Response complete:", currentResponse);
+      currentResponse = ""; // Reset for next message
+      break;
+
+    case "error":
+      console.error("Error:", msg.error);
+      break;
+  }
+};
+
+// Send a message
+function sendMessage(text) {
+  ws.send(JSON.stringify({
+    type: "message",
+    content: text,
+    conversationId: conversationId
+  }));
+  currentResponse = "";
+}
+
+ws.onopen = () => {
+  console.log("WebSocket connected");
+};
+
+ws.onerror = (error) => {
+  console.error("WebSocket error:", error);
+};
+
+ws.onclose = () => {
+  console.log("WebSocket disconnected");
+};
+```
+
+## Example client (Python)
+
+```python
+import asyncio
+import json
+import websockets
+
+async def chat():
+    uri = "ws://localhost:3000/ws"
+    async with websockets.connect(uri) as ws:
+        # Wait for connection message
+        connected = json.loads(await ws.recv())
+        conversation_id = connected["conversationId"]
+        print(f"Connected: {conversation_id}")
+
+        # Send a message
+        await ws.send(json.dumps({
+            "type": "message",
+            "content": "What's the weather in Paris?",
+            "conversationId": conversation_id
+        }))
+
+        # Stream response
+        response = ""
+        async for message in ws:
+            msg = json.loads(message)
+
+            if msg["type"] == "text":
+                response += msg["content"]
+                print(msg["content"], end="", flush=True)
+
+            elif msg["type"] == "done":
+                print("\n✓ Complete")
+                break
+
+            elif msg["type"] == "error":
+                print(f"\n✗ Error: {msg['error']}")
+                break
+
+asyncio.run(chat())
+```
+
+## Conversation continuity
+
+Each WebSocket connection is assigned a unique `conversationId` when it connects. This ID:
+
+- Identifies the conversation thread
+- Links messages to the same context
+- Persists conversation history in SQLite
+
+### Multi-message conversation
+
+To continue a conversation, reuse the `conversationId`:
+
+```javascript
+// First message
+ws.send(JSON.stringify({
+  type: "message",
+  content: "Remember that I prefer concise answers",
+  conversationId: conversationId
+}));
+
+// Wait for "done" message...
+
+// Second message (same conversation)
+ws.send(JSON.stringify({
+  type: "message",
+  content: "What's the capital of France?",
+  conversationId: conversationId
+}));
+```
+
+The agent will remember the preference from the first message.
+
+### New conversation
+
+To start a fresh conversation:
+
+1. **Close the WebSocket** and open a new one (new ID assigned automatically)
+2. **Omit `conversationId`** and let the server generate a new one
+3. **Provide a new UUID** as `conversationId`
+
+## Use cases
+
+### Real-time chat UI
+
+Display responses token-by-token as they arrive for a ChatGPT-like experience:
+
+```javascript
+const responseDiv = document.getElementById("response");
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  if (msg.type === "text") {
+    responseDiv.textContent += msg.content;
+  }
+};
+```
+
+### Progress indicators
+
+Show a loading indicator while waiting for the first chunk:
+
+```javascript
+let receivedFirstChunk = false;
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  if (msg.type === "text" && !receivedFirstChunk) {
+    hideLoadingSpinner();
+    receivedFirstChunk = true;
+  }
+};
+```
+
+### Long-running tasks
+
+For complex requests that take minutes, the WebSocket keeps you updated:
+
+```javascript
+You: Research Python async patterns and write a tutorial
+
+[10s]  Chunk: "I'll search for..."
+[15s]  Chunk: "Based on the search results..."
+[30s]  Chunk: "Here's a tutorial:\n\n# Python Async..."
+[60s]  Chunk: "...example code:\n\n```python\n..."
+[90s]  Done
+```
+
+You see progress every few seconds instead of waiting 90 seconds for the full response.
+
+## Comparison with REST API
+
+| Feature | REST (`/api/chat`) | WebSocket (`/ws`) |
+|---|---|---|
+| Response style | Full response after completion | Streaming chunks |
+| Latency | High (wait for full response) | Low (first chunk in ~2-5s) |
+| Connection | One request per message | Persistent connection |
+| Conversation | Use `conversationId` in each request | Automatic via connection ID |
+| Complexity | Simple (one HTTP request) | Moderate (manage WebSocket lifetime) |
+
+**When to use REST:**
+- Simple integrations
+- Batch processing
+- Don't need real-time feedback
+
+**When to use WebSocket:**
+- Interactive chat UI
+- Real-time experience expected
+- Long-running requests where you want progress updates
+
+## Error handling
+
+### Connection errors
+
+If the WebSocket fails to connect:
+- Check that the agent is running
+- Verify the URL (ws:// vs wss://)
+- Check firewall/proxy settings
+
+### Message errors
+
+If you receive `{ type: "error", ... }`:
+- Check that your message includes `type: "message"` and `content`
+- Verify the `conversationId` exists (if provided)
+- Check agent logs for details
+
+### Disconnections
+
+WebSocket connections can drop due to:
+- Network interruptions
+- Server restarts
+- Client timeout
+
+**Reconnection strategy:**
+
+```javascript
+let reconnectAttempts = 0;
+
+function connect() {
+  const ws = new WebSocket("ws://localhost:3000/ws");
+
+  ws.onclose = () => {
+    reconnectAttempts++;
+    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+    console.log(`Reconnecting in ${delay}ms...`);
+    setTimeout(connect, delay);
+  };
+
+  ws.onopen = () => {
+    reconnectAttempts = 0; // Reset on successful connection
+  };
+
+  return ws;
+}
+```
+
+## Limitations
+
+- **No authentication** by default — use a reverse proxy (nginx, Traefik) to add auth
+- **No backpressure** — the server sends chunks as fast as the model generates them
+- **Single conversation per connection** — to handle multiple users, create one WebSocket per user
+- **No reconnection with history** — if disconnected, conversation context is lost unless you provide the same `conversationId`
+
+## Security
+
+### Production deployment
+
+In production:
+
+1. **Use TLS** (`wss://`) to encrypt WebSocket traffic
+2. **Add authentication** via a reverse proxy or middleware
+3. **Rate limit** to prevent abuse
+4. **Validate input** (the server validates JSON structure, but add custom validation if needed)
+
+### CORS
+
+WebSocket connections don't use CORS, but you can restrict access by:
+- Checking `Origin` header in your reverse proxy
+- Requiring a token in the initial connection URL
+
+---
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="REST API" icon="code" href="/api/chat">
+    Use the simpler REST API for non-streaming requests
+  </Card>
+  <Card title="Chat Platforms" icon="comments" href="/chat-platforms">
+    Connect via Slack/Discord/Telegram instead
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration">
+    Configure the agent for your environment
+  </Card>
+</CardGroup>

@@ -26,6 +26,15 @@
         ]
       },
       {
+        "group": "User Guide",
+        "pages": [
+          "using-the-agent",
+          "understanding-models",
+          "chat-platforms",
+          "tasks-automation"
+        ]
+      },
+      {
         "group": "Architecture",
         "pages": [
           "architecture/overview",
@@ -48,6 +57,11 @@
         "pages": [
           "api/overview",
           "api/chat",
+          "api/websocket",
+          "api/skills",
+          "api/health"
+        ]
+      },
           "api/skills",
           "api/health"
         ]

@@ -1,0 +1,382 @@
+---
+title: Tasks & Automation
+description: Schedule recurring work and automate routine tasks with the agent.
+---
+
+The agent can run tasks automatically on a schedule using the built-in task scheduler. Tasks use cron expressions to define when they run, and can deliver results to any configured chat platform or email.
+
+## What are tasks?
+
+A **task** is:
+- A **prompt** that tells the agent what to do
+- A **schedule** (cron expression) that says when to run
+- An optional **delivery** config that says where to send results
+
+When a task triggers, the agent:
+1. Processes the prompt (with access to all tools and skills)
+2. Generates a result
+3. Optionally delivers the result to a specified destination
+4. Records the run in SQLite for your review
+
+## Creating tasks
+
+You can create tasks by asking the agent:
+
+```
+Create a daily task at 9am to check my RSS feeds and 
+summarize new articles to #morning-briefing on Slack
+```
+
+This creates a task with:
+- **Prompt**: "Check my RSS feeds and summarize new articles"
+- **Cron**: `0 9 * * *` (every day at 9:00 UTC)
+- **Delivery**: Slack channel `#morning-briefing`
+
+### Via chat
+
+```
+You: Create a task that runs every Monday at 10am to 
+     summarize GitHub activity and email it to me at 
+     alice@example.com
+
+Agent: [uses task_create tool]
+       Task created! ID: 01234567-89ab-cdef-0123-456789abcdef
+       Next run: Monday, March 3 at 10:00 UTC
+```
+
+### Via API
+
+```bash
+curl -X POST http://localhost:3000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Create a task that runs daily at 6pm to...",
+    "conversationId": "task-setup"
+  }'
+```
+
+## Managing tasks
+
+### List tasks
+
+```
+List all my tasks
+Show scheduled tasks
+```
+
+Response shows:
+- Task name/description
+- Schedule (cron expression)
+- Next run time
+- Enabled/disabled status
+- Delivery destination (if configured)
+
+### Complete a task
+
+Mark a task as done (for manual tasks):
+
+```
+Mark task "prepare quarterly report" as complete
+```
+
+### Delete a task
+
+```
+Delete the daily RSS summary task
+Remove task with ID 01234567-...
+```
+
+### View task history
+
+```
+Show task runs from the last week
+What was the result of the last "github summary" task run?
+```
+
+## Cron expressions
+
+Tasks use standard cron syntax to define schedules:
+
+```
+┌───────────── minute (0-59)
+│ ┌───────────── hour (0-23)
+│ │ ┌───────────── day of month (1-31)
+│ │ │ ┌───────────── month (1-12)
+│ │ │ │ ┌───────────── day of week (0-6, Sunday=0)
+│ │ │ │ │
+* * * * *
+```
+
+### Common patterns
+
+| Schedule | Cron | Description |
+|---|---|---|
+| Every hour | `0 * * * *` | At minute 0 of every hour |
+| Every day at 9am | `0 9 * * *` | Daily at 9:00 UTC |
+| Every Monday at 10am | `0 10 * * 1` | Weekly on Mondays |
+| Every weekday at 8am | `0 8 * * 1-5` | Monday through Friday |
+| Every 15 minutes | `*/15 * * * *` | Four times per hour |
+| First day of month at noon | `0 12 1 * *` | Monthly on the 1st |
+
+**Important**: All times are in **UTC**. If you want 9am in your local timezone, calculate the UTC offset:
+- Paris (CET/CEST): `0 8 * * *` (UTC) = 9am Paris winter, 10am summer
+- New York (EST/EDT): `0 14 * * *` (UTC) = 9am New York winter, 10am summer
+
+### Testing cron expressions
+
+Use [crontab.guru](https://crontab.guru) to validate and understand cron expressions.
+
+## Delivery destinations
+
+Tasks can automatically deliver results to:
+
+### Slack
+
+```json
+{
+  "type": "slack",
+  "channel": "#engineering"
+}
+```
+
+Or:
+```json
+{
+  "type": "slack",
+  "channel": "C01234ABCDE"  // Channel ID
+}
+```
+
+### Discord
+
+```json
+{
+  "type": "discord",
+  "channel": "1234567890123456789"  // Channel ID
+}
+```
+
+### Telegram
+
+```json
+{
+  "type": "telegram",
+  "channel": "-1001234567890"  // Chat ID (starts with -)
+}
+```
+
+### Email
+
+```json
+{
+  "type": "email",
+  "address": "alice@example.com",
+  "subject": "Daily Report"
+}
+```
+
+**Note**: Email delivery requires `HIMALAYA_CONFIG` to be set (see [Configuration](/configuration)).
+
+### No delivery
+
+If you don't specify a delivery destination, the task runs and the result is only stored in the database. You can review it later:
+
+```
+Show task runs from today
+```
+
+## Example use cases
+
+### Daily standup digest
+
+```
+Create a daily task at 9am to:
+1. Read my calendar for today
+2. Check my email for urgent messages
+3. Summarize uncompleted tasks
+4. Deliver to #standup on Slack
+```
+
+Cron: `0 9 * * *`
+
+### Weekly GitHub summary
+
+```
+Create a weekly task every Monday at 10am to:
+- Fetch GitHub activity from the last week
+- Summarize PRs and issues
+- Email the summary to team@example.com
+```
+
+Cron: `0 10 * * 1`
+
+### RSS feed monitoring
+
+```
+Create a task that runs every 4 hours to:
+- Check my subscribed RSS feeds
+- Save any new articles to memory
+- If there are interesting articles, notify #news on Discord
+```
+
+Cron: `0 */4 * * *`
+
+### Monitoring & alerts
+
+```
+Create a task every 15 minutes to:
+- Read the "healthcheck" secret from Vault
+- If status is not "ok", send alert to #ops on Slack
+```
+
+Cron: `*/15 * * * *`
+
+### Monthly reports
+
+```
+Create a task on the first day of each month at 8am to:
+- Summarize completed tasks from last month
+- Email the report to manager@example.com
+```
+
+Cron: `0 8 1 * *`
+
+## How tasks execute
+
+### Execution flow
+
+1. **Scheduler triggers** at the scheduled time (cron tick)
+2. **Task prompt is loaded** from SQLite
+3. **Agent processes the prompt** with access to all tools (memory, web search, email, etc.)
+4. **Result is generated** (could take 30 seconds to 2 minutes depending on complexity)
+5. **Delivery tool is invoked** (if configured) to send the result
+6. **Task run is recorded** in SQLite with status (success/error) and output
+
+### Tool access
+
+Tasks have access to all agent skills:
+- `memory_*` — Read/write memory
+- `web_search` — Search the web
+- `email_send` — Send emails
+- `secret_read` — Read from Vault
+- `feed_*` — Check RSS feeds
+- `deliver_message` — Send to chat platforms
+- MCP tools (if configured)
+
+### Error handling
+
+If a task fails:
+- The error is recorded in `task_runs` table
+- The task remains scheduled (will retry on next trigger)
+- No alert is sent (unless your prompt includes error handling)
+
+To be notified of task failures, include error handling in your prompt:
+
+```
+Create a task to check the database backup. If it fails, 
+send an alert to #ops on Slack.
+```
+
+## Task runs
+
+Every task execution creates a **task run** record with:
+- Run ID (unique identifier)
+- Task ID
+- Start time
+- Status (`success` or `error`)
+- Output (the agent's response text)
+
+### Viewing runs
+
+```
+Show task runs from the last 7 days
+What was the output of the last "daily summary" task?
+Show failed task runs
+```
+
+## Task scheduler
+
+The scheduler is a background service that runs inside the agent process.
+
+### When it starts
+
+The scheduler starts automatically when the agent boots (unless `SCHEDULER_ENABLED=false`).
+
+### Persistence
+
+Tasks and schedules are stored in SQLite. If the agent restarts:
+- All existing tasks are reloaded
+- Schedules resume from the next trigger time
+- Missed runs (during downtime) are **not** backfilled
+
+**Example**: If a task runs daily at 9am, and the agent is down from 8am to 10am, the 9am run is skipped. The next run will be at 9am the following day.
+
+### Idempotency
+
+If you have multiple agent replicas (not recommended for SQLite-backed deployments), only one scheduler should be active. Use `SCHEDULER_ENABLED=false` on additional replicas.
+
+## Advanced: Delivery in prompts
+
+You can also explicitly use the `deliver_message` tool in your task prompt:
+
+```
+Create a task that runs every hour to check web traffic.
+If traffic is above 10,000/hour, use deliver_message to 
+send a notification to #ops on Slack.
+```
+
+The agent will:
+1. Check the traffic (using whatever tool/skill you've given it)
+2. Evaluate the condition
+3. Call `deliver_message` if the condition is met
+
+This is more flexible than the built-in delivery config because you can:
+- Send conditionally (only if something is wrong)
+- Send to multiple destinations
+- Format the message dynamically
+
+## Limitations
+
+- **No backfill**: Missed runs (during downtime) are not retried
+- **No distributed scheduler**: If you run multiple agent replicas, only enable the scheduler on one
+- **UTC only**: All cron expressions are evaluated in UTC timezone
+- **No sub-minute precision**: Minimum interval is 1 minute
+
+## FAQ
+
+**Q: Can I run a task immediately (outside its schedule)?**
+A: Yes, but only via the task management UI or direct SQL. There's no chat command for this yet.
+
+**Q: How do I disable a task without deleting it?**
+A: Ask the agent to "disable the [task name] task". This keeps the task but prevents it from running.
+
+**Q: What happens if a task takes longer than its interval?**
+A: The next run waits for the current run to complete. (No overlapping executions.)
+
+**Q: Can I schedule one-time tasks?**
+A: Cron expressions are for recurring tasks. For one-time work, just ask the agent directly and it will respond when done.
+
+**Q: How do I see task history in SQLite?**
+A: Query the `task_runs` table:
+```sql
+SELECT * FROM task_runs ORDER BY started_at DESC LIMIT 10;
+```
+
+---
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Skills Reference" icon="wrench" href="/skills/built-in">
+    See all tools available to tasks
+  </Card>
+  <Card title="Delivery Skill" icon="paper-plane" href="/skills/built-in#deliver">
+    Learn more about the deliver_message tool
+  </Card>
+  <Card title="Chat Platforms" icon="comments" href="/chat-platforms">
+    Set up Slack/Discord/Telegram for task delivery
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration">
+    Configure email and other integrations
+  </Card>
+</CardGroup>

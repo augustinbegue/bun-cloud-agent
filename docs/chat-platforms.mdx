@@ -1,0 +1,311 @@
+---
+title: Chat Platforms
+description: How to interact with the agent via Slack, Discord, and Telegram.
+---
+
+The agent can connect to multiple chat platforms simultaneously. Each platform adapter is automatically enabled when you provide the required credentials.
+
+## Slack
+
+### Setup
+
+1. **Create a Slack app** at [api.slack.com/apps](https://api.slack.com/apps)
+2. **Enable Socket Mode** in your app settings
+3. **Add bot token scopes**:
+   - `app_mentions:read` — See when the bot is mentioned
+   - `chat:write` — Send messages
+   - `channels:history` — Read channel messages (if subscribed)
+   - `groups:history` — Read private channel messages
+   - `im:history` — Read DMs
+4. **Install the app** to your workspace
+5. **Copy the tokens**:
+   - Bot User OAuth Token (starts with `xoxb-`)
+   - App-Level Token for Socket Mode (starts with `xapp-`)
+
+### Configuration
+
+```env
+SLACK_BOT_TOKEN=xoxb-your-bot-token
+SLACK_APP_TOKEN=xapp-your-app-token
+```
+
+### Using the agent in Slack
+
+**Mention the bot** to start a conversation:
+
+```
+@agent What's the weather in Paris?
+```
+
+**Thread conversations** are maintained automatically. Reply in the thread to continue the conversation:
+
+```
+@agent Create a summary of our team's Q1 goals
+
+  └─ agent: Here's a summary...
+  
+    └─ You: Can you email this to the team?
+    
+      └─ agent: Done! Email sent to #team channel
+```
+
+**Direct messages** also work:
+
+```
+DM to @agent: Remember that I prefer meetings after 2pm
+```
+
+**Subscribed channels**: Once you mention the agent in a thread, it stays subscribed and responds to all messages in that thread (no need to keep mentioning it).
+
+### Slack tips
+
+- The agent sees the full thread history in each conversation
+- Use threads to keep conversations organized
+- You can have multiple parallel conversations in different threads
+- The bot appears as "typing..." while processing your request
+
+---
+
+## Discord
+
+### Setup
+
+1. **Create a Discord application** at [discord.com/developers/applications](https://discord.com/developers/applications)
+2. **Create a bot** under the Bot section
+3. **Enable intents**:
+   - Message Content Intent
+   - Guild Messages Intent
+4. **Copy the bot token**
+5. **Invite the bot** to your server using the OAuth2 URL generator:
+   - Scopes: `bot`, `applications.commands`
+   - Permissions: `Read Messages`, `Send Messages`, `Read Message History`
+
+### Configuration
+
+```env
+DISCORD_BOT_TOKEN=your-bot-token
+DISCORD_APPLICATION_ID=your-app-id
+DISCORD_PUBLIC_KEY=your-public-key
+```
+
+### Using the agent in Discord
+
+**Mention the bot** in any channel:
+
+```
+@agent Help me debug this error: <paste error>
+```
+
+**Direct messages** work:
+
+```
+DM to @agent: What's on my schedule today?
+```
+
+**Channel conversations**: Like Slack, Discord threads maintain context automatically.
+
+### Discord tips
+
+- The agent responds to mentions in any channel it has access to
+- Use threads to keep long conversations organized
+- The bot shows as "typing..." while working
+
+---
+
+## Telegram
+
+### Setup
+
+1. **Create a bot** by messaging [@BotFather](https://t.me/botfather) on Telegram
+2. Send `/newbot` and follow the prompts
+3. **Copy the bot token** from BotFather
+4. **Optional secret token** for webhook security (generate with `openssl rand -hex 32`)
+
+### Configuration
+
+```env
+TELEGRAM_BOT_TOKEN=your-bot-token
+TELEGRAM_SECRET_TOKEN=your-secret-token
+```
+
+### Using the agent in Telegram
+
+**Direct message the bot**:
+
+```
+You: What's the weather in Berlin?
+```
+
+**Group chats**: Add the bot to a group and mention it:
+
+```
+@yourbot What time is it in Tokyo?
+```
+
+**Commands**: Telegram bots can use commands (if you configure them in BotFather):
+
+```
+/start — Start a conversation
+/help — Get help
+```
+
+(Note: Command handling depends on your bot configuration)
+
+### Telegram tips
+
+- Telegram conversations are 1:1 by default (each user gets their own thread)
+- Group chats require mentioning the bot
+- The bot can send rich media (images, documents) if skills support it
+
+---
+
+## Multi-platform usage
+
+You can enable **all three platforms** simultaneously. The agent handles each platform independently:
+
+```env
+# Enable all platforms
+SLACK_BOT_TOKEN=xoxb-...
+SLACK_APP_TOKEN=xapp-...
+DISCORD_BOT_TOKEN=...
+DISCORD_APPLICATION_ID=...
+TELEGRAM_BOT_TOKEN=...
+```
+
+Each platform maintains separate conversations:
+- A Slack thread is a different conversation from a Discord channel
+- Conversations don't cross platforms
+- Memory and tasks are shared across all platforms (stored in SQLite)
+
+### Cross-platform delivery
+
+The `deliver` skill lets the agent send messages to any configured platform:
+
+```
+You (in Slack): Summarize today's tasks and send to #updates on Discord
+
+Agent: [generates summary]
+       [uses deliver_message tool to post to Discord #updates]
+       Done! Posted summary to Discord #updates channel
+```
+
+---
+
+## Conversation threading
+
+### How threading works
+
+Each conversation is identified by:
+- **Platform** (`slack`, `discord`, `telegram`)
+- **Thread ID** (channel ID, DM ID, or thread ID)
+
+The agent:
+1. Loads previous messages from this thread (from SQLite)
+2. Adds your new message to the history
+3. Generates a response with full context
+4. Saves the updated conversation back to SQLite
+
+### Thread lifecycle
+
+**Thread starts** when:
+- You mention the bot for the first time
+- You send a DM to the bot
+
+**Thread continues** when:
+- You reply in the same thread/channel/DM
+- On Slack/Discord: All messages in a subscribed thread are seen by the agent
+
+**Thread persists** indefinitely:
+- All conversation history is stored in SQLite
+- The agent remembers context from weeks/months ago in the same thread
+- To start fresh, create a new thread or DM
+
+---
+
+## Privacy & Security
+
+### What the bot can see
+
+Each platform adapter only sees:
+- **Messages where the bot is mentioned**
+- **Messages in threads where it has been mentioned (subscribed)**
+- **Direct messages** to the bot
+
+The bot **cannot** see:
+- Random channel messages (unless mentioned)
+- Private channels it's not invited to
+- DMs between other users
+
+### Data storage
+
+All chat platform messages are stored in your SQLite database:
+- Message text and conversation history
+- Platform and thread metadata
+- No message content is sent to third parties (except the AI model provider)
+
+### Authentication
+
+The agent doesn't implement user authentication at the platform level—it trusts the platform to handle user identity.
+
+For enterprise deployments, consider:
+- Using private channels/servers
+- Restricting bot access to specific channels
+- Reviewing conversation logs in SQLite
+
+---
+
+## Troubleshooting
+
+### Bot doesn't respond
+
+**Check that credentials are set correctly:**
+```bash
+# In the deployment pod
+env | grep -E 'SLACK|DISCORD|TELEGRAM'
+```
+
+**Check logs for adapter startup:**
+```
+[chat] Slack adapter initialized
+[chat] Discord adapter initialized
+```
+
+**Verify bot permissions:**
+- Slack: Check OAuth scopes
+- Discord: Check bot has Message Content Intent enabled
+- Telegram: Check bot token from BotFather
+
+### Bot responds slowly
+
+- Check [Understanding Models](/understanding-models) for info on response times
+- Complex requests can take 30-120 seconds
+- Check agent logs for step count (high step count = slower)
+
+### Bot responds in wrong thread
+
+This shouldn't happen—each thread is isolated. If you see cross-talk:
+- Check SQLite for duplicate thread IDs
+- Restart the agent to clear any in-memory state
+
+### Multiple bots responding
+
+If you have multiple agent instances with the same tokens:
+- All instances will receive the same message
+- All will respond (duplicate responses)
+- **Solution**: Use only one agent instance per set of platform credentials
+
+---
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Using the Agent" icon="robot" href="/using-the-agent">
+    Learn what you can ask the agent to do
+  </Card>
+  <Card title="Tasks & Automation" icon="clock" href="/tasks-automation">
+    Set up automated scheduled tasks
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration">
+    Full environment variable reference
+  </Card>
+</CardGroup>

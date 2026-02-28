@@ -86,6 +86,34 @@ Subscribe to RSS/Atom feeds and retrieve new entries.
 
 ---
 
+## deliver
+
+**File:** `src/skills/built-in/deliver.ts`
+
+Proactively send messages to configured chat platforms or email. Used by automated tasks to deliver results, or manually to send notifications across platforms.
+
+| Tool | Description |
+|---|---|
+| `deliver_message` | Send a message to Slack, Discord, Telegram, or email |
+| `list_destinations` | Show which platforms are configured and available |
+
+**Use cases:**
+- Scheduled tasks delivering reports to Slack channels
+- Cross-platform notifications (e.g., ask in Slack to send to Discord)
+- Email summaries or alerts
+- Automated monitoring alerts
+
+**Example usage:**
+```
+Send a summary of today's tasks to #team on Slack
+Email the deployment checklist to ops@example.com
+Notify the #incidents channel on Discord about this issue
+```
+
+See [Tasks & Automation](/tasks-automation) for automated delivery with scheduled tasks.
+
+---
+
 ## email
 
 **File:** `src/skills/built-in/email.ts`

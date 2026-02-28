@@ -1,0 +1,180 @@
+---
+title: Using the Agent
+description: Daily usage guide for interacting with your AI assistant.
+---
+
+## How to interact
+
+You can interact with bun-cloud-agent through:
+
+- **Chat platforms** — Slack, Discord, or Telegram
+- **HTTP API** — Send messages via REST endpoint
+- **WebSocket** — Stream responses in real-time
+
+## What you can ask
+
+The agent is a general-purpose assistant with access to various tools and skills:
+
+### Information & Research
+
+```
+What time is it?
+Search the web for recent news about AI
+What's on my schedule today?
+```
+
+### Memory & Context
+
+The agent remembers information you tell it:
+
+```
+Remember that I prefer Python over JavaScript
+What do you know about my coding preferences?
+Forget my timezone preference
+```
+
+The agent proactively uses the `memory` skill to save important details about you during conversations.
+
+### Tasks & Automation
+
+Create scheduled or recurring tasks:
+
+```
+Create a daily task at 9am to summarize my RSS feeds
+List my scheduled tasks
+Mark task "morning briefing" as complete
+```
+
+Tasks run automatically at their scheduled time. See [Tasks & Automation](/tasks-automation) for details.
+
+### Email & Notifications
+
+**Note:** Requires email configuration (HIMALAYA_CONFIG) or chat platform setup.
+
+```
+Send an email to alice@example.com with subject "Meeting notes"
+Notify the #engineering channel on Slack about the deployment
+```
+
+### Web Search
+
+Search the web for current information:
+
+```
+What's the weather in Paris?
+Find recent articles about Kubernetes security
+```
+
+### Secrets Management
+
+Read secrets from Vault/OpenBao (requires configuration):
+
+```
+Read the database password from vault path secret/db/prod
+List all secrets under secret/apps/
+```
+
+## Conversations
+
+The agent maintains conversation context within each thread:
+
+- **On chat platforms** — Each Slack thread, Discord channel, or Telegram chat is a separate conversation
+- **Via API** — Use `conversationId` to maintain context across multiple API calls
+
+Previous messages in the conversation are automatically loaded, so the agent remembers what you discussed earlier in the same thread.
+
+## How the agent thinks
+
+When you send a message, the agent:
+
+1. **Loads conversation history** from the previous messages in this thread
+2. **Analyzes your request** and decides which tools to use
+3. **Executes tools** in a loop (searches web, saves memory, runs commands, etc.)
+4. **Refines its approach** based on tool results
+5. **Responds** with a natural language answer
+
+This process can take multiple "steps" — each step is one cycle of the agent thinking and using tools. Complex requests may take 5-15 steps to complete.
+
+## Response times
+
+Response time depends on:
+
+- **Request complexity** — Simple questions are fast, multi-step tasks take longer
+- **Model tier** — Fast models respond in seconds, strong models take 10-30 seconds per step
+- **Tool execution** — Web searches, email sending, and external API calls add time
+
+Expect:
+- Simple questions: 2-10 seconds
+- Multi-step tasks: 30 seconds to 2 minutes
+- Automated scheduled tasks: Run in background, results delivered to configured destination
+
+## Privacy & Data
+
+All your conversations, memories, and tasks are stored in a local SQLite database. No data is sent to third parties except:
+
+- **Model providers** (OpenAI, Anthropic, etc.) receive your messages to generate responses
+- **External tools** (web search, MCP servers) receive data you explicitly ask to be searched or processed
+- **Vault/OpenBao** for secrets retrieval (if configured)
+
+Chat platform credentials are only used to send/receive messages on those platforms.
+
+## Tips for best results
+
+### Be specific
+
+Instead of:
+```
+Help me with my project
+```
+
+Try:
+```
+Review the API documentation and summarize the authentication flow
+```
+
+### Use memory
+
+Tell the agent to remember preferences:
+```
+Remember that I'm in the Europe/Paris timezone
+Remember that I prefer concise answers
+```
+
+### Break down complex tasks
+
+For multi-step work, guide the agent:
+```
+First, search for Python async best practices.
+Then, create a summary document.
+Finally, email it to me.
+```
+
+Or combine into one request and let the agent figure out the steps:
+```
+Research Python async best practices and email me a summary
+```
+
+### Review scheduled tasks
+
+Check what's running automatically:
+```
+List all my tasks
+Show me task runs from the last week
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Chat Platforms" icon="comments" href="/chat-platforms">
+    Set up Slack, Discord, or Telegram integration
+  </Card>
+  <Card title="Tasks & Automation" icon="clock" href="/tasks-automation">
+    Learn how to automate recurring work
+  </Card>
+  <Card title="Skills Reference" icon="wrench" href="/skills/built-in">
+    See all available tools and capabilities
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/overview">
+    Integrate via HTTP or WebSocket
+  </Card>
+</CardGroup>

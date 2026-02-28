@@ -1,0 +1,192 @@
+---
+title: Understanding Models
+description: How the agent chooses which AI model to use for your requests.
+---
+
+## Model tiers
+
+The agent has access to three tiers of AI models, each optimized for different types of work:
+
+| Tier | Default Model | When Used | Typical Speed |
+|---|---|---|---|
+| **Fast** | `llama3.2:3b` | Quick responses, simple queries | 1-3 seconds |
+| **Default** | `llama3.1:8b` | Most conversations | 3-8 seconds |
+| **Strong** | `gpt-4o` | Complex multi-step tasks | 8-30 seconds |
+
+All model tiers can be customized via [configuration](/configuration).
+
+## How the agent chooses
+
+### Normal requests
+
+By default, all conversations start with the **default** tier model (`llama3.1:8b` if using Ollama, or your configured default).
+
+This model handles most requests well:
+- General conversation
+- Simple questions
+- Using 1-3 tools
+- Quick analysis
+
+### Automatic escalation
+
+When the agent detects a request is taking many steps to complete, it **automatically escalates** to the **strong** tier model.
+
+**Escalation happens after 10 steps.**
+
+#### What is a "step"?
+
+A step is one cycle of:
+1. The model analyzes the current state
+2. Decides which tool(s) to use (if any)
+3. Executes those tools
+4. Receives the results
+
+Example conversation showing steps:
+
+```
+You: Research Python async best practices and email me a summary
+
+Step 1: Agent decides to use web_search tool
+Step 2: Receives search results
+Step 3: Decides to search for more specific examples
+Step 4: Receives more results
+Step 5: Decides to organize findings
+Step 6: Drafts summary
+Step 7: Decides to use email_send tool
+Step 8: Email sent successfully
+Final: Returns confirmation message
+```
+
+This request took 8 steps, so it completed with the default model.
+
+#### When escalation happens
+
+If a task requires more than 10 steps, the agent switches to the strong model to:
+- Better handle complex reasoning
+- Reduce the risk of getting stuck in loops
+- Improve success rate on difficult tasks
+
+Examples that often trigger escalation:
+- Multi-stage research with synthesis
+- Complex data transformations
+- Tasks requiring precise logical reasoning
+- Debugging or troubleshooting scenarios
+- Writing code with multiple iterations
+
+### Cost implications
+
+Model tiers have different costs:
+
+| Tier | Typical Cost | Notes |
+|---|---|---|
+| **Fast** | Free (Ollama) or $0.001/1K tokens | Local models are free |
+| **Default** | Free (Ollama) or $0.01/1K tokens | Standard pricing |
+| **Strong** | $0.05-0.15/1K tokens | Cloud APIs (OpenAI, Anthropic) |
+
+Automatic escalation means:
+- Most simple requests stay cheap (free with local Ollama)
+- Complex tasks get the power they need without manual intervention
+- You're not paying for a strong model when a smaller one works fine
+
+## Model providers
+
+The agent supports multiple AI providers:
+
+### Local (Free)
+
+- **Ollama** — Run models locally on your machine or Kubernetes cluster
+  - No API costs
+  - Full privacy (no data sent to cloud)
+  - Requires GPU for good performance
+  - Best models: `llama3.2:3b`, `llama3.1:8b`, `qwen2.5:14b`
+
+### Cloud APIs
+
+- **OpenAI** — GPT-4o, GPT-4o-mini, GPT-3.5-turbo
+- **Anthropic** — Claude Sonnet 4, Claude Haiku
+- **Google** — Gemini 2.0 Flash, Gemini Pro
+- **Groq** — Fast hosted Llama models
+- **DeepSeek** — Cost-effective models
+- Many others supported (see [Configuration](/configuration))
+
+## Configuring models
+
+Set your preferred models in `.env` or via Kubernetes ConfigMap:
+
+```env
+# Local Ollama (free)
+MODEL_FAST=ollama:llama3.2:3b
+MODEL_DEFAULT=ollama:llama3.1:8b
+MODEL_STRONG=ollama:qwen2.5:14b
+
+# Or cloud APIs
+MODEL_FAST=openai:gpt-4o-mini
+MODEL_DEFAULT=openai:gpt-4o-mini
+MODEL_STRONG=openai:gpt-4o
+
+# Or mix local + cloud
+MODEL_FAST=ollama:llama3.2:3b
+MODEL_DEFAULT=ollama:llama3.1:8b
+MODEL_STRONG=anthropic:claude-sonnet-4-20250514
+```
+
+## Viewing model usage
+
+You can see which model tier is being used by checking the agent's logs (if you have access to them):
+
+```
+[agent] Step 1 complete — tokens: 150+45
+[agent] Step 2 complete — tokens: 180+62
+...
+[agent] Step 11 complete — tokens: 220+89  # Escalated to strong model
+```
+
+The agent doesn't currently expose model choice in its responses, but this may be added in a future version.
+
+## Recommendations
+
+### For development/testing
+```env
+MODEL_DEFAULT=ollama:llama3.1:8b
+MODEL_STRONG=ollama:qwen2.5:14b
+```
+Everything runs locally and free.
+
+### For production (privacy-focused)
+```env
+MODEL_DEFAULT=ollama:llama3.1:8b
+MODEL_STRONG=ollama:qwen2.5:32b
+```
+Keep all data on your infrastructure.
+
+### For production (performance-focused)
+```env
+MODEL_DEFAULT=openai:gpt-4o-mini
+MODEL_STRONG=anthropic:claude-sonnet-4-20250514
+```
+Best quality, fastest responses, but costs apply.
+
+### For production (balanced)
+```env
+MODEL_FAST=ollama:llama3.2:3b
+MODEL_DEFAULT=ollama:llama3.1:8b
+MODEL_STRONG=openai:gpt-4o
+```
+Most work runs locally (free), complex tasks use cloud for reliability.
+
+## Model selection FAQ
+
+**Q: Can I force the agent to use a specific model?**
+A: Not currently. The agent always starts with the default tier and auto-escalates if needed.
+
+**Q: Why did my simple question take so long?**
+A: If it took many steps, the agent might have escalated to the strong model. Check logs to see step count.
+
+**Q: Can I disable auto-escalation?**
+A: Not directly, but you can set `MODEL_STRONG=MODEL_DEFAULT` so escalation doesn't change the model.
+
+**Q: How do I reduce costs?**
+A: Use local Ollama models for all tiers, or set `MODEL_DEFAULT` to a cheaper cloud model like `openai:gpt-4o-mini`.
+
+**Q: Which provider is fastest?**
+A: Groq offers the fastest cloud inference. Local Ollama can be faster with a good GPU.

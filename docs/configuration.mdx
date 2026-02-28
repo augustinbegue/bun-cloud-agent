@@ -5,68 +5,449 @@ description: Full reference for all environment variables.
 
 All configuration is done via environment variables. Bun auto-loads `.env` — no extra setup needed.
 
+## Quick start
+
+Minimum required configuration to run the agent:
+
+```env
+# Local Ollama (free, no API key needed)
+OLLAMA_BASE_URL=http://localhost:11434/v1
+
+# Or cloud provider
+OPENAI_API_KEY=sk-your-key-here
+```
+
+See [Quickstart](/quickstart) for a complete setup guide.
+
 ## Server
 
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | `3000` | HTTP server port |
+| `DATABASE_PATH` | `./data/agent.db` | Path to SQLite database file |
+| `SCHEDULER_ENABLED` | `true` | Enable the task scheduler (set to `false` to disable automated tasks) |
 
 ## Models
 
 Models use `provider:model` format, e.g. `openai:gpt-4o` or `ollama:llama3.1:8b`.
 
+See [Understanding Models](/understanding-models) for details on how the agent chooses which model to use.
+
 | Variable | Default | Description |
 |---|---|---|
-| `MODEL_FAST` | `ollama:llama3.2:3b` | Fast tier — quick, low-latency tasks |
-| `MODEL_DEFAULT` | `ollama:llama3.1:8b` | Default tier — standard conversations |
+| `MODEL_FAST` | `ollama:llama3.2:3b` | Fast tier — quick, low-latency tasks (currently unused but reserved for future use) |
+| `MODEL_DEFAULT` | `ollama:llama3.1:8b` | Default tier — all requests start with this model |
 | `MODEL_STRONG` | `openai:gpt-4o` | Strong tier — complex tasks, auto-escalated after 10 agent steps |
+
+### Customization examples
+
+**All local (free):**
+```env
+MODEL_DEFAULT=ollama:llama3.1:8b
+MODEL_STRONG=ollama:qwen2.5:14b
+```
+
+**Cloud-first (best quality):**
+```env
+MODEL_DEFAULT=openai:gpt-4o-mini
+MODEL_STRONG=anthropic:claude-sonnet-4-20250514
+```
+
+**Hybrid (balanced):**
+```env
+MODEL_DEFAULT=ollama:llama3.1:8b
+MODEL_STRONG=openai:gpt-4o
+```
+
+## System instructions
+
+Customize the agent's behavior with a system prompt:
+
+| Variable | Default | Description |
+|---|---|---|
+| `SYSTEM_INSTRUCTIONS` | (see below) | The agent's system prompt |
+
+**Default system instructions:**
+```
+You are a helpful personal AI assistant. You have access to various tools and skills.
+Use them proactively to help the user. Be concise and direct in your responses.
+When you learn important information about the user, save it to memory for future reference.
+```
+
+**Customization example:**
+```env
+SYSTEM_INSTRUCTIONS="You are a technical support assistant for Acme Corp. \
+Be professional and concise. Always check the knowledge base before answering. \
+For urgent issues, escalate to #support-urgent on Slack."
+```
 
 ## Model providers
 
-Each provider reads from its standard environment variable.
+Each provider reads from its standard environment variable. You only need to set the credentials for providers you actually use.
 
-| Provider | Env var |
-|---|---|
-| OpenAI | `OPENAI_API_KEY` |
-| Anthropic | `ANTHROPIC_API_KEY` |
-| Google | `GOOGLE_GENERATIVE_AI_API_KEY` |
-| Ollama | `OLLAMA_BASE_URL` (default: `http://localhost:11434/v1`) |
-| Mistral | `MISTRAL_API_KEY` |
-| Groq | `GROQ_API_KEY` |
-| DeepSeek | `DEEPSEEK_API_KEY` |
-| xAI | `XAI_API_KEY` |
+### Local providers (free)
 
-See [model-router.ts](/architecture/model-routing) for the full list of supported providers.
+| Provider | Env var | Notes |
+|---|---|---|
+| **Ollama** | `OLLAMA_BASE_URL` | Default: `http://localhost:11434/v1`. Run models locally for free. |
+
+**Ollama setup:**
+```bash
+# Install Ollama
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Pull models
+ollama pull llama3.1:8b
+ollama pull llama3.2:3b
+ollama pull qwen2.5:14b
+
+# Ollama runs on localhost:11434 by default
+```
+
+### Cloud providers
+
+| Provider | Env var | Notes |
+|---|---|---|
+| **OpenAI** | `OPENAI_API_KEY` | GPT-4o, GPT-4o-mini, GPT-3.5-turbo. Get key at [platform.openai.com](https://platform.openai.com) |
+| **Anthropic** | `ANTHROPIC_API_KEY` | Claude Sonnet 4, Claude Haiku. Get key at [console.anthropic.com](https://console.anthropic.com) |
+| **Google** | `GOOGLE_GENERATIVE_AI_API_KEY` | Gemini 2.0 Flash, Gemini Pro. Get key at [aistudio.google.com](https://aistudio.google.com) |
+| **Groq** | `GROQ_API_KEY` | Fast hosted Llama models. Get key at [console.groq.com](https://console.groq.com) |
+| **DeepSeek** | `DEEPSEEK_API_KEY` | Cost-effective models. Get key at [platform.deepseek.com](https://platform.deepseek.com) |
+| **xAI** | `XAI_API_KEY` | Grok models. Get key at [console.x.ai](https://console.x.ai) |
+| **Mistral** | `MISTRAL_API_KEY` | Mistral models. Get key at [console.mistral.ai](https://console.mistral.ai) |
+
+See [Model Routing](/architecture/model-routing) for the complete list of 15+ supported providers.
 
 ## Chat adapters
 
-Adapters are only instantiated when their credentials are present.
+Adapters are only instantiated when their credentials are present. You can enable one, two, or all three simultaneously.
 
-| Variable | Description |
-|---|---|
-| `SLACK_BOT_TOKEN` | Slack bot OAuth token |
-| `SLACK_APP_TOKEN` | Slack app-level token (Socket Mode) |
-| `DISCORD_TOKEN` | Discord bot token |
-| `TELEGRAM_TOKEN` | Telegram bot token |
+See [Chat Platforms](/chat-platforms) for detailed setup instructions.
+
+### Slack
+
+| Variable | Description | How to get |
+|---|---|---|
+| `SLACK_BOT_TOKEN` | Bot User OAuth Token (starts with `xoxb-`) | Install your app to a workspace at [api.slack.com/apps](https://api.slack.com/apps) |
+| `SLACK_APP_TOKEN` | App-Level Token for Socket Mode (starts with `xapp-`) | Enable Socket Mode in your app settings |
+
+**Required scopes:** `app_mentions:read`, `chat:write`, `channels:history`, `groups:history`, `im:history`
+
+### Discord
+
+| Variable | Description | How to get |
+|---|---|---|
+| `DISCORD_BOT_TOKEN` | Bot token | Create a bot at [discord.com/developers/applications](https://discord.com/developers/applications) |
+| `DISCORD_APPLICATION_ID` | Application ID | Found in your Discord app settings |
+| `DISCORD_PUBLIC_KEY` | Public key | Found in your Discord app settings |
+
+**Required intents:** Message Content Intent, Guild Messages Intent
+
+### Telegram
+
+| Variable | Description | How to get |
+|---|---|---|
+| `TELEGRAM_BOT_TOKEN` | Bot token | Message [@BotFather](https://t.me/botfather), send `/newbot` |
+| `TELEGRAM_SECRET_TOKEN` | Secret token for webhook security (optional) | Generate with `openssl rand -hex 32` |
 
 ## MCP servers
+
+[Model Context Protocol](https://modelcontextprotocol.io) servers extend the agent with external tools.
 
 | Variable | Description |
 |---|---|
 | `MCP_SERVERS` | JSON array of MCP server configs — see [MCP skills](/skills/mcp) |
 
-## Vault / OpenBao
+**Example:**
+```env
+MCP_SERVERS='[{"type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","/workspace"]}]'
+```
+
+**Available MCP servers:**
+- `@modelcontextprotocol/server-filesystem` — File system access
+- `@modelcontextprotocol/server-brave-search` — Web search via Brave
+- `@modelcontextprotocol/server-github` — GitHub API integration
+- `@modelcontextprotocol/server-postgres` — PostgreSQL queries
+- Many more at [modelcontextprotocol.io/servers](https://modelcontextprotocol.io/servers)
+
+See [MCP Skills](/skills/mcp) for detailed configuration.
+
+## Email integration
+
+Send emails via SMTP using [himalaya](https://github.com/soywod/himalaya) CLI.
 
 | Variable | Description |
 |---|---|
-| `VAULT_ADDR` | Vault/OpenBao address |
-| `VAULT_TOKEN` | Vault token |
-| `VAULT_NAMESPACE` | Vault namespace (optional) |
+| `HIMALAYA_CONFIG` | Path to himalaya TOML config file |
 
-## SQLite
+**Setup:**
+```bash
+# Install himalaya
+cargo install himalaya
+# or: brew install himalaya
 
-The database path defaults to `./data/agent.db`. Override via:
+# Configure
+himalaya configure
+
+# Test
+echo "Test message" | himalaya send -t you@example.com -s "Test"
+```
+
+The agent uses the `email_send` tool which shells out to `himalaya message send`.
+
+**Himalaya config example** (`~/.config/himalaya/config.toml`):
+```toml
+[accounts.default]
+default = true
+email = "agent@example.com"
+
+[accounts.default.smtp]
+host = "smtp.example.com"
+port = 587
+encryption = "start-tls"
+login = "agent@example.com"
+passwd.cmd = "pass show email/agent"
+```
+
+Then set:
+```env
+HIMALAYA_CONFIG=/home/user/.config/himalaya/config.toml
+```
+
+## Vault / OpenBao
+
+Read secrets from HashiCorp Vault or OpenBao using the `secret_read` and `secret_list` tools.
 
 | Variable | Default | Description |
 |---|---|---|
-| `DATABASE_PATH` | `./data/agent.db` | Path to the SQLite database file |
+| `VAULT_ADDR` | — | Vault/OpenBao server URL (e.g. `https://vault.example.com`) |
+| `VAULT_AUTH_METHOD` | `token` | Authentication: `token`, `approle`, or `kubernetes` |
+| `VAULT_TOKEN` | — | Static token (for `authMethod=token`) |
+| `VAULT_ROLE_ID` | — | AppRole role_id (for `authMethod=approle`) |
+| `VAULT_SECRET_ID` | — | AppRole secret_id (for `authMethod=approle`) |
+| `VAULT_K8S_ROLE` | — | Kubernetes auth role (for `authMethod=kubernetes`) |
+| `VAULT_K8S_MOUNT` | `kubernetes` | Kubernetes auth mount path |
+| `VAULT_NAMESPACE` | — | Vault namespace (HCP Vault, Vault Enterprise) |
+| `VAULT_DEFAULT_MOUNT` | `secret` | Default KV v2 mount point |
+
+**Token auth example:**
+```env
+VAULT_ADDR=https://vault.example.com
+VAULT_AUTH_METHOD=token
+VAULT_TOKEN=hvs.CAESIAbc...
+```
+
+**Kubernetes auth example** (in-cluster):
+```env
+VAULT_ADDR=https://vault.example.com
+VAULT_AUTH_METHOD=kubernetes
+VAULT_K8S_ROLE=bun-cloud-agent
+```
+
+The Kubernetes auth method reads the service account JWT from `/var/run/secrets/kubernetes.io/serviceaccount/token`.
+
+**AppRole auth example:**
+```env
+VAULT_ADDR=https://vault.example.com
+VAULT_AUTH_METHOD=approle
+VAULT_ROLE_ID=abc123...
+VAULT_SECRET_ID=def456...
+```
+
+See [Vault documentation](https://developer.hashicorp.com/vault/docs) for auth method setup.
+
+---
+
+## Configuration examples
+
+### Local development
+
+```env
+# Server
+PORT=3000
+
+# Models (all local, free)
+OLLAMA_BASE_URL=http://localhost:11434/v1
+MODEL_DEFAULT=ollama:llama3.1:8b
+MODEL_STRONG=ollama:qwen2.5:14b
+
+# No chat adapters (use API directly)
+# No scheduler (manual testing only)
+SCHEDULER_ENABLED=false
+```
+
+### Personal assistant (Slack)
+
+```env
+# Server
+PORT=3000
+
+# Models (hybrid: local default, cloud for complex tasks)
+OLLAMA_BASE_URL=http://localhost:11434/v1
+MODEL_DEFAULT=ollama:llama3.1:8b
+MODEL_STRONG=openai:gpt-4o
+OPENAI_API_KEY=sk-...
+
+# Slack
+SLACK_BOT_TOKEN=xoxb-...
+SLACK_APP_TOKEN=xapp-...
+
+# Enable scheduler for tasks
+SCHEDULER_ENABLED=true
+
+# Custom instructions
+SYSTEM_INSTRUCTIONS="You are my personal assistant. Be concise. Remember my preferences in memory."
+```
+
+### Team support bot (Discord + Vault)
+
+```env
+# Server
+PORT=3000
+
+# Models (cloud-first for quality)
+MODEL_DEFAULT=openai:gpt-4o-mini
+MODEL_STRONG=anthropic:claude-sonnet-4-20250514
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Discord
+DISCORD_BOT_TOKEN=...
+DISCORD_APPLICATION_ID=...
+DISCORD_PUBLIC_KEY=...
+
+# Vault for secrets
+VAULT_ADDR=https://vault.company.com
+VAULT_AUTH_METHOD=approle
+VAULT_ROLE_ID=...
+VAULT_SECRET_ID=...
+
+# Scheduler for automated tasks
+SCHEDULER_ENABLED=true
+
+# Custom instructions
+SYSTEM_INSTRUCTIONS="You are the Acme Corp support assistant. Check Vault for credentials. Escalate urgent issues to #ops."
+```
+
+### Multi-platform + MCP + Email
+
+```env
+# Server
+PORT=3000
+DATABASE_PATH=/data/agent.db
+
+# Models
+MODEL_DEFAULT=ollama:llama3.1:8b
+MODEL_STRONG=openai:gpt-4o
+OLLAMA_BASE_URL=http://ollama:11434/v1
+OPENAI_API_KEY=sk-...
+
+# All chat platforms
+SLACK_BOT_TOKEN=xoxb-...
+SLACK_APP_TOKEN=xapp-...
+DISCORD_BOT_TOKEN=...
+DISCORD_APPLICATION_ID=...
+TELEGRAM_BOT_TOKEN=...
+
+# Email
+HIMALAYA_CONFIG=/config/himalaya.toml
+
+# MCP servers
+MCP_SERVERS='[
+  {"type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","/workspace"]},
+  {"type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-brave-search"],"env":{"BRAVE_API_KEY":"xxx"}}
+]'
+
+# Scheduler
+SCHEDULER_ENABLED=true
+```
+
+### Kubernetes production
+
+```env
+# Server
+PORT=3000
+DATABASE_PATH=/data/agent.db
+
+# Models (cost-optimized)
+MODEL_DEFAULT=openai:gpt-4o-mini
+MODEL_STRONG=openai:gpt-4o
+OPENAI_API_KEY=sk-...  # from Kubernetes Secret
+
+# Slack
+SLACK_BOT_TOKEN=xoxb-...  # from Kubernetes Secret
+SLACK_APP_TOKEN=xapp-...   # from Kubernetes Secret
+
+# Vault with Kubernetes auth
+VAULT_ADDR=https://vault.example.com
+VAULT_AUTH_METHOD=kubernetes
+VAULT_K8S_ROLE=bun-cloud-agent
+
+# Scheduler
+SCHEDULER_ENABLED=true
+```
+
+---
+
+## Environment variable precedence
+
+1. **Kubernetes Secret** (mounted as env vars) — highest priority
+2. **Kubernetes ConfigMap** (mounted as env vars)
+3. **`.env` file** (Bun auto-loads)
+4. **Default values** (hardcoded in `src/config/index.ts`)
+
+In production, use Secrets for sensitive data (API keys, tokens) and ConfigMaps for non-sensitive config (port, model names, URLs).
+
+## Troubleshooting
+
+### Agent won't start
+
+**Check logs for:**
+```
+[config] Failed to parse MCP_SERVERS: ...
+```
+Fix: Validate JSON syntax in `MCP_SERVERS`.
+
+### Chat adapter not initializing
+
+**Check logs for:**
+```
+[chat] Slack adapter initialized
+```
+
+If missing:
+- Verify `SLACK_BOT_TOKEN` and `SLACK_APP_TOKEN` are set
+- Check token format (should start with `xoxb-` and `xapp-`)
+
+### Wrong model being used
+
+**Check that:**
+- `MODEL_DEFAULT` is in `provider:model` format
+- Provider credentials are set (e.g. `OPENAI_API_KEY` for `openai:*` models)
+- Ollama is running if using `ollama:*` models
+
+### Scheduler not running tasks
+
+**Check that:**
+- `SCHEDULER_ENABLED=true` (or unset, defaults to true)
+- Logs show: `[scheduler] Started with N active task(s)`
+- Cron expressions are valid (test at [crontab.guru](https://crontab.guru))
+
+---
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Run the agent locally in 5 minutes
+  </Card>
+  <Card title="Understanding Models" icon="brain" href="/understanding-models">
+    Learn how model selection works
+  </Card>
+  <Card title="Chat Platforms" icon="comments" href="/chat-platforms">
+    Set up Slack, Discord, or Telegram
+  </Card>
+  <Card title="Deployment" icon="server" href="/deployment/helm">
+    Deploy on Kubernetes with Helm
+  </Card>
+</CardGroup>

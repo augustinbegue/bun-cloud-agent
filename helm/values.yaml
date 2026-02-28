@@ -1,0 +1,105 @@
+replicaCount: 1
+
+image:
+  repository: bun-cloud-agent
+  pullPolicy: IfNotPresent
+  tag: ""  # defaults to .Chart.AppVersion
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: false
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  fsGroup: 1000
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 3000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: agent.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# SQLite persistent volume
+persistence:
+  enabled: true
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  mountPath: /app/data
+
+resources: {}
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 30
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Agent configuration
+config:
+  port: 3000
+  dbPath: /app/data/agent.db
+  systemInstructions: ""  # uses built-in default if empty
+
+  # Local model (e.g. Ollama)
+  localModelUrl: "http://ollama:11434/v1"
+  localModelFast: "llama3.2:3b"
+  localModelDefault: "llama3.1:8b"
+
+  # Cloud fallback
+  cloudModelUrl: "https://api.openai.com/v1"
+  cloudModelStrong: "gpt-4o"
+
+  # MCP servers — JSON array string, e.g. '[{"type":"http","url":"http://mcp:8080"}]'
+  mcpServers: "[]"
+
+# Sensitive credentials — stored in a Secret
+# Set values here or provide an existing secret name
+secrets:
+  # Reference an existing Secret instead of creating one
+  existingSecret: ""
+
+  # Values used when creating a new Secret (base64-encoded by Helm)
+  cloudApiKey: ""
+  slackBotToken: ""
+  slackSigningSecret: ""
+  discordApplicationId: ""
+  discordBotToken: ""
+  discordPublicKey: ""
+  telegramBotToken: ""
+  telegramSecretToken: ""

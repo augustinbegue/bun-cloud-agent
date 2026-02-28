@@ -1,0 +1,12 @@
+apiVersion: v2
+name: bun-cloud-agent
+description: Cloud-native personal AI assistant (Bun + SQLite + AI SDK)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - ai
+  - agent
+  - bun
+  - sqlite
+home: https://github.com/augustinbegue/bun-cloud-agent

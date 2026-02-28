@@ -3,6 +3,27 @@ entries:
   bun-cloud-agent:
   - apiVersion: v2
     appVersion: 1.0.0
+    created: "2026-02-28T12:00:55.704244661Z"
+    description: Cloud-native personal AI assistant (Bun + SQLite + AI SDK)
+    digest: 44703452f77b4e68c7dde16a7ab1ec9e5b4c22564a52445e3f9a8dc3b248f1b3
+    home: https://github.com/augustinbegue/bun-cloud-agent
+    keywords:
+    - ai
+    - agent
+    - bun
+    - sqlite
+    maintainers:
+    - name: augustinbegue
+      url: https://github.com/augustinbegue
+    name: bun-cloud-agent
+    sources:
+    - https://github.com/augustinbegue/bun-cloud-agent
+    type: application
+    urls:
+    - https://github.com/augustinbegue/bun-cloud-agent/releases/download/helm-bun-cloud-agent-0.2.0/bun-cloud-agent-0.2.0.tgz
+    version: 0.2.0
+  - apiVersion: v2
+    appVersion: 1.0.0
     created: "2026-02-28T10:32:08.705799973Z"
     description: Cloud-native personal AI assistant (Bun + SQLite + AI SDK)
     digest: fb2db375d40ac4ab83231a41021c0c162ccc06d6dab2af1bbf6b617279fc0552
@@ -17,4 +38,4 @@ entries:
     urls:
     - https://github.com/augustinbegue/bun-cloud-agent/releases/download/helm-bun-cloud-agent-0.1.0/bun-cloud-agent-0.1.0.tgz
     version: 0.1.0
-generated: "2026-02-28T10:32:08.705807017Z"
+generated: "2026-02-28T12:00:55.704252716Z"

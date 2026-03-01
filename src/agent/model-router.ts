@@ -46,12 +46,15 @@ export type ModelTier = "fast" | "default" | "strong";
  * | perplexity   | PERPLEXITY_API_KEY                                                |
  */
 export function createModelRouter(config: AgentConfig) {
+  const ollamaProvider = createOpenAI({
+    baseURL: config.ollamaBaseUrl,
+    apiKey: "ollama",
+    name: "ollama",
+  });
+
   const registry = createProviderRegistry({
     // Ollama — OpenAI-compatible local inference
-    ollama: createOpenAI({
-      baseURL: config.ollamaBaseUrl,
-      apiKey: "ollama",
-    }),
+    ollama: ollamaProvider,
 
     // Cloud / hosted providers — auto-configure from env vars
     openai: createOpenAI(),
@@ -73,22 +76,31 @@ export function createModelRouter(config: AgentConfig) {
 
   type ModelId = Parameters<typeof registry.languageModel>[0];
 
+  function resolveLanguageModel(modelId: string) {
+    if (modelId.startsWith("ollama:")) {
+      const ollamaModelId = modelId.slice("ollama:".length);
+      return ollamaProvider.chat(ollamaModelId);
+    }
+
+    return registry.languageModel(modelId as ModelId);
+  }
+
   return {
     /** Get the language model for a tier (fast / default / strong). */
     get(tier: ModelTier) {
       switch (tier) {
         case "fast":
-          return registry.languageModel(config.modelFast as ModelId);
+          return resolveLanguageModel(config.modelFast);
         case "default":
-          return registry.languageModel(config.modelDefault as ModelId);
+          return resolveLanguageModel(config.modelDefault);
         case "strong":
-          return registry.languageModel(config.modelStrong as ModelId);
+          return resolveLanguageModel(config.modelStrong);
       }
     },
 
     /** Resolve an arbitrary `provider:model` string to a language model. */
     resolve(modelId: string) {
-      return registry.languageModel(modelId as ModelId);
+      return resolveLanguageModel(modelId);
     },
 
     /** Check if the Ollama endpoint is reachable. */

@@ -21,6 +21,12 @@ export interface AgentConfig {
   /** Agent system instructions */
   systemInstructions: string;
 
+  /** Enable per-tool execution logging (inputs, outputs, duration, errors) */
+  toolLogging: boolean;
+
+  /** Max characters to print for tool input/output logs */
+  toolLogMaxChars: number;
+
   /** MCP server configurations */
   mcpServers: MCPSkillConfig[];
 
@@ -102,6 +108,9 @@ export function loadConfig(): AgentConfig {
       `You are a helpful personal AI assistant. You have access to various tools and skills.
 Use them proactively to help the user. Be concise and direct in your responses.
 When you learn important information about the user, save it to memory for future reference.`,
+
+    toolLogging: process.env.TOOL_LOGGING !== "false",
+    toolLogMaxChars: Number(process.env.TOOL_LOG_MAX_CHARS ?? 2000),
 
     himalayaConfig: process.env.HIMALAYA_CONFIG ?? "",
     schedulerEnabled: process.env.SCHEDULER_ENABLED !== "false",

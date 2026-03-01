@@ -34,4 +34,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .DS_Store
 
 # SQLite database files
-data/*.db
+*.db
+*.db-shm
+*.db-wal

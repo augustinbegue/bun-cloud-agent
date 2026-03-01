@@ -16,7 +16,7 @@ describe("loadConfig", () => {
     // Clear relevant vars to test defaults
     const keys = [
       "PORT", "DB_PATH", "OLLAMA_BASE_URL", "MODEL_FAST", "MODEL_DEFAULT",
-      "MODEL_STRONG", "SYSTEM_INSTRUCTIONS", "MCP_SERVERS",
+      "MODEL_STRONG", "SYSTEM_INSTRUCTIONS", "MCP_SERVERS", "TOOL_LOGGING", "TOOL_LOG_MAX_CHARS",
     ];
     for (const k of keys) delete process.env[k];
 
@@ -28,6 +28,8 @@ describe("loadConfig", () => {
     expect(cfg.modelDefault).toBe("ollama:llama3.1:8b");
     expect(cfg.modelStrong).toBe("openai:gpt-4o");
     expect(cfg.mcpServers).toEqual([]);
+    expect(cfg.toolLogging).toBe(true);
+    expect(cfg.toolLogMaxChars).toBe(2000);
   });
 
   it("reads PORT from env", () => {
@@ -46,6 +48,14 @@ describe("loadConfig", () => {
     const cfg = loadConfig();
     expect(cfg.modelStrong).toBe("anthropic:claude-sonnet-4-20250514");
     expect(cfg.modelFast).toBe("groq:llama-3.1-8b-instant");
+  });
+
+  it("reads tool logging config from env", () => {
+    process.env.TOOL_LOGGING = "false";
+    process.env.TOOL_LOG_MAX_CHARS = "512";
+    const cfg = loadConfig();
+    expect(cfg.toolLogging).toBe(false);
+    expect(cfg.toolLogMaxChars).toBe(512);
   });
 
   it("parses valid MCP_SERVERS JSON", () => {

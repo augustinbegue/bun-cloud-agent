@@ -27,6 +27,7 @@ export function setupBot(agent: Agent, config: AgentConfig, db: Database) {
       botToken: config.discord.botToken,
       publicKey: config.discord.publicKey,
     });
+    console.log("[setupBot] Discord adapter configured");
   }
 
   if (config.telegram.botToken) {

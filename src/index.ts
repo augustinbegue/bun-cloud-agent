@@ -23,6 +23,9 @@ import type { SkillContext } from "./skills/types";
 const config = loadConfig();
 const db = initDatabase(config.dbPath);
 
+console.log("[server] Configuration loaded:");
+console.log(JSON.stringify(config, null, 2));
+
 // --- Skills ---
 const registry = new SkillRegistry();
 
@@ -177,21 +180,70 @@ if (Object.keys(mcpTools).length > 0) {
   console.log(`[server] MCP tools loaded: ${Object.keys(mcpTools).join(", ")}`);
 }
 
-// --- Graceful shutdown ---
-process.on("SIGINT", async () => {
-  console.log("\n[server] Shutting down...");
-  scheduler?.stop();
-  await closeMCPClients();
-  await chat.shutdown();
-  db.close();
-  process.exit(0);
-});
+// --- Discord Gateway (receives regular messages via WebSocket) ---
+// HTTP interactions alone cannot receive channel messages — the Gateway
+// WebSocket is required. For a persistent server we run a reconnect loop
+// instead of the serverless cron approach described in the docs.
+const gatewayAbortController = new AbortController();
 
-process.on("SIGTERM", async () => {
-  console.log("[server] SIGTERM received, shutting down...");
+if (config.discord.botToken && config.discord.publicKey && config.discord.applicationId) {
+  // Ensure the Chat SDK (and Discord adapter) is fully initialised before
+  // touching the adapter directly.
+  await chat.initialize();
+  const discordAdapter = (chat as any).adapters.get("discord") as
+    | { startGatewayListener: (opts: { waitUntil: (t: Promise<unknown>) => void }, durationMs?: number, signal?: AbortSignal) => Promise<Response> }
+    | undefined;
+
+  if (discordAdapter?.startGatewayListener) {
+    const SESSION_MS = 10 * 60 * 1000; // 10-minute sessions
+
+    const runGatewayLoop = async () => {
+      console.log("[Discord] Starting Gateway WebSocket listener (persistent loop)...");
+      while (!gatewayAbortController.signal.aborted) {
+        try {
+          // startGatewayListener returns a Response immediately and hands the
+          // actual WebSocket work to waitUntil. We capture that task and await
+          // it here so the loop only restarts after the session truly ends.
+          let resolveSession: () => void;
+          const sessionDone = new Promise<void>((r) => { resolveSession = r; });
+
+          await discordAdapter.startGatewayListener(
+            {
+              waitUntil: (task: Promise<unknown>) => {
+                task.then(() => resolveSession(), () => resolveSession());
+              },
+            },
+            SESSION_MS,
+            gatewayAbortController.signal,
+            
+          );
+
+          await sessionDone;
+        } catch (err) {
+          if (gatewayAbortController.signal.aborted) break;
+          console.error("[Discord] Gateway error, reconnecting in 5 s:", err);
+          await Bun.sleep(5_000);
+        }
+      }
+      console.log("[Discord] Gateway listener stopped.");
+    };
+
+    runGatewayLoop().catch((err) => console.error("[Discord] Gateway loop fatal:", err));
+  } else {
+    console.warn("[Discord] Adapter does not expose startGatewayListener — messages will not be received.");
+  }
+}
+
+// --- Graceful shutdown ---
+const shutdown = async (signal: string) => {
+  console.log(`\n[server] ${signal} received, shutting down...`);
+  gatewayAbortController.abort();
   scheduler?.stop();
   await closeMCPClients();
   await chat.shutdown();
   db.close();
   process.exit(0);
-});
+};
+
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));

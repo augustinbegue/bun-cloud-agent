@@ -91,17 +91,55 @@ export const feedSkill: Skill = (ctx) => ({
 
       let totalNew = 0;
       const errors: { feed: string; error: string }[] = [];
+      const feedResults: {
+        id: string;
+        name: string;
+        url: string;
+        fetched: boolean;
+        newCount: number;
+        unseenCount: number;
+        latestHeadline: string | null;
+        warning?: string;
+        error?: string;
+      }[] = [];
 
       for (const feed of feeds) {
         try {
           const result = await fetchAndStoreFeed(ctx.db, feed.id, feed.url);
-          if ("newCount" in result) {
-            totalNew += result.newCount as number;
+          if (typeof result.newCount === "number") {
+            totalNew += result.newCount;
           }
+
+          if (typeof result.error === "string") {
+            errors.push({ feed: feed.name, error: result.error });
+          }
+
+          feedResults.push({
+            id: feed.id,
+            name: feed.name,
+            url: feed.url,
+            fetched: Boolean(result.fetched),
+            newCount: typeof result.newCount === "number" ? result.newCount : 0,
+            unseenCount: typeof result.unseenCount === "number" ? result.unseenCount : 0,
+            latestHeadline: typeof result.latestHeadline === "string" ? result.latestHeadline : null,
+            ...(typeof result.warning === "string" ? { warning: result.warning } : {}),
+            ...(typeof result.error === "string" ? { error: result.error } : {}),
+          });
         } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
           errors.push({
             feed: feed.name,
-            error: err instanceof Error ? err.message : String(err),
+            error: message,
+          });
+          feedResults.push({
+            id: feed.id,
+            name: feed.name,
+            url: feed.url,
+            fetched: false,
+            newCount: 0,
+            unseenCount: 0,
+            latestHeadline: null,
+            error: message,
           });
         }
       }
@@ -109,6 +147,7 @@ export const feedSkill: Skill = (ctx) => ({
       const unseen = getUnseenEntries(ctx.db);
       return {
         totalNew,
+        feeds: feedResults,
         unseen: unseen.slice(0, 50).map(formatEntry),
         unseenCount: unseen.length,
         errors: errors.length > 0 ? errors : undefined,
@@ -144,8 +183,18 @@ async function fetchAndStoreFeed(
   db: import("bun:sqlite").Database,
   feedId: string,
   feedUrl: string,
-): Promise<Record<string, unknown>> {
+): Promise<{
+  fetched: boolean;
+  feedId: string;
+  newCount: number;
+  unseenCount: number;
+  unseen: ReturnType<typeof formatEntry>[];
+  latestHeadline: string | null;
+  warning?: string;
+  error?: string;
+}> {
   let xml: string;
+  let contentType: string | null = null;
   try {
     const res = await fetch(feedUrl, {
       headers: {
@@ -154,16 +203,47 @@ async function fetchAndStoreFeed(
       },
       signal: AbortSignal.timeout(15_000),
     });
+
+    if (!res.ok) {
+      const body = await res.text();
+      return {
+        fetched: false,
+        feedId,
+        newCount: 0,
+        unseenCount: 0,
+        unseen: [],
+        latestHeadline: null,
+        error: `HTTP ${res.status} ${res.statusText}${body ? ` — ${body.slice(0, 160)}` : ""}`,
+      };
+    }
+
+    contentType = res.headers.get("content-type");
     xml = await res.text();
   } catch (err) {
-    return { error: `Fetch failed: ${err instanceof Error ? err.message : String(err)}` };
+    return {
+      fetched: false,
+      feedId,
+      newCount: 0,
+      unseenCount: 0,
+      unseen: [],
+      latestHeadline: null,
+      error: `Fetch failed: ${err instanceof Error ? err.message : String(err)}`,
+    };
   }
 
   let parsed: Record<string, unknown>;
   try {
     parsed = parser.parse(xml) as Record<string, unknown>;
   } catch (err) {
-    return { error: `XML parse failed: ${err instanceof Error ? err.message : String(err)}` };
+    return {
+      fetched: false,
+      feedId,
+      newCount: 0,
+      unseenCount: 0,
+      unseen: [],
+      latestHeadline: null,
+      error: `XML parse failed: ${err instanceof Error ? err.message : String(err)}`,
+    };
   }
 
   const items = extractItems(parsed);
@@ -191,10 +271,18 @@ async function fetchAndStoreFeed(
   updateFeedFetched(db, feedId, lastEntryId);
 
   const unseen = getUnseenEntries(db, feedId);
+  const latestHeadline = items[0]?.title ?? null;
+  const warning =
+    items.length === 0
+      ? `No parsable feed items found${contentType ? ` (content-type: ${contentType})` : ""}`
+      : undefined;
+
   return {
     fetched: true,
     feedId,
     newCount,
+    latestHeadline,
+    ...(warning ? { warning } : {}),
     unseen: unseen.slice(0, 30).map(formatEntry),
     unseenCount: unseen.length,
   };
